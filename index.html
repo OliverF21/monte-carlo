@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Monte Carlo Stock Simulator</title>
+  <title>Monte Carlo Stock Simulator — GARCH(1,1)</title>
 
   <!-- Plotly.js for interactive charts -->
   <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
@@ -267,6 +267,26 @@
       line-height: 1.55;
     }
 
+    /* ── Model badge ─────────────────────────────────────────────────────── */
+    .model-badge {
+      font-size: .7rem;
+      font-weight: 700;
+      padding: .18rem .55rem;
+      border-radius: 20px;
+      background: #e8f4fd;
+      color: #2980b9;
+      border: 1px solid #b3d7f0;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      white-space: nowrap;
+    }
+
+    /* ── Backtest chart ──────────────────────────────────────────────────── */
+    #backtest-chart { width: 100%; height: 420px; }
+
+    .coverage-good { color: #1e8449 !important; }
+    .coverage-bad  { color: #c0392b !important; }
+
     /* ── Footer note ─────────────────────────────────────────────────────── */
     .disclaimer {
       font-size: .78rem;
@@ -287,7 +307,7 @@
 
 <header>
   <h1>Monte Carlo Stock Simulator</h1>
-  <p>Geometric Brownian Motion price forecasting for equity analysis</p>
+  <p>GARCH(1,1) + Student-t price forecasting &mdash; volatility clustering &amp; fat tails</p>
 </header>
 
 <main>
@@ -337,6 +357,7 @@
 
     <div class="btn-row">
       <button class="btn btn-primary" id="run-btn" onclick="runSimulation()">&#9654; Run Simulation</button>
+      <button class="btn btn-secondary" id="backtest-btn" onclick="runBacktest()">&#128200; Backtest</button>
       <button class="btn btn-secondary" id="csv-btn" onclick="downloadCSV()" disabled>&#8595; Download CSV</button>
     </div>
   </div>
@@ -355,8 +376,11 @@
   <!-- ── Results Card ────────────────────────────────────────────────────── -->
   <div class="card hidden" id="results-card">
 
-    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.5rem;flex-wrap:wrap;gap:.5rem;">
-      <h2 id="chart-title" style="font-size:1.1rem;color:#1a3a5c;"></h2>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;flex-wrap:wrap;gap:.5rem;">
+      <div style="display:flex;align-items:center;gap:.65rem;">
+        <h2 id="chart-title" style="font-size:1.1rem;color:#1a3a5c;"></h2>
+        <span id="model-badge" class="model-badge"></span>
+      </div>
       <span id="chart-subtitle" style="font-size:.82rem;color:#7a94aa;"></span>
     </div>
 
@@ -394,8 +418,45 @@
     </div>
 
     <p class="disclaimer" style="margin-top:1rem;">
-      Simulation uses Geometric Brownian Motion calibrated on historical log returns.
-      For educational purposes only — not investment advice.
+      Simulation uses GARCH(1,1) with Student-t innovations (falls back to GBM if insufficient data).
+      For educational purposes only &mdash; not investment advice.
+    </p>
+
+  </div>
+
+  <!-- ── Backtest Card ───────────────────────────────────────────────────── -->
+  <div class="card hidden" id="backtest-card">
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;flex-wrap:wrap;gap:.5rem;">
+      <div style="display:flex;align-items:center;gap:.65rem;">
+        <h2 id="bt-title" style="font-size:1.1rem;color:#1a3a5c;"></h2>
+        <span id="bt-model-badge" class="model-badge"></span>
+      </div>
+      <span style="font-size:.82rem;color:#7a94aa;">Trained on ~2 years &middot; Tested on last 252 trading days</span>
+    </div>
+
+    <div id="backtest-chart"></div>
+
+    <div class="stats-grid" style="margin-top:1.25rem;">
+      <div class="stat-card">
+        <div class="stat-label">90% Band Coverage</div>
+        <div class="stat-value" id="bt-cov90">—</div>
+        <div style="font-size:.7rem;color:#7a94aa;margin-top:.2rem;">target: ~90%</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">50% Band Coverage</div>
+        <div class="stat-value" id="bt-cov50">—</div>
+        <div style="font-size:.7rem;color:#7a94aa;margin-top:.2rem;">target: ~50%</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Calibration</div>
+        <div class="stat-value" id="bt-calibration">—</div>
+      </div>
+    </div>
+
+    <p class="disclaimer" style="margin-top:1rem;">
+      A well-calibrated model shows coverage close to each band's target.
+      Under-coverage means bands are too narrow; over-coverage means too wide.
     </p>
 
   </div>
@@ -422,8 +483,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // State
 // ─────────────────────────────────────────────────────────────────────────────
-let lastCsvData  = null;
-let lastTicker   = null;
+let lastCsvData = null;
+let lastTicker  = null;
 
 // Sync slider display
 document.getElementById("simulations").addEventListener("input", function () {
@@ -613,10 +674,106 @@ function renderStats(data) {
   setText("stat-prob",    `${(s.prob_gain * 100).toFixed(1)}%`);
   setText("stat-vol",     `${(s.annual_vol * 100).toFixed(1)}%`);
   setText("stat-var",     `${(s.var_95_1day * 100).toFixed(2)}%`);
+  document.getElementById("model-badge").textContent = s.model || "GBM";
 }
 
 function setText(id, val) { document.getElementById(id).textContent = val; }
 function setHTML(id, val) { document.getElementById(id).innerHTML  = val; }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Backtest
+// ─────────────────────────────────────────────────────────────────────────────
+async function runBacktest() {
+  const ticker      = document.getElementById("ticker").value.trim().toUpperCase();
+  const simulations = parseInt(document.getElementById("simulations").value, 10);
+
+  if (!ticker) { showError("Please enter a stock ticker symbol."); return; }
+
+  hideError();
+  setBtLoading(true);
+  document.getElementById("backtest-card").classList.add("hidden");
+
+  try {
+    const res = await fetch("/api/backtest", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ticker, simulations, test_days: 252 }),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) { showError(data.error || "Backtest failed."); return; }
+    renderBacktestChart(data);
+    document.getElementById("backtest-card").classList.remove("hidden");
+    document.getElementById("backtest-card").scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (err) {
+    showError("Network error: " + err.message);
+  } finally {
+    setBtLoading(false);
+  }
+}
+
+function renderBacktestChart(data) {
+  const { ticker, model, dates, actual,
+          percentile_5, percentile_25, percentile_50, percentile_75, percentile_95,
+          coverage } = data;
+
+  const traces = [
+    // 90% band (p5–p95 fill)
+    { x: dates, y: percentile_5,  type: "scatter", mode: "lines",
+      line: { color: "rgba(231,76,60,0.25)", width: 1 },
+      showlegend: false, hoverinfo: "skip" },
+    { x: dates, y: percentile_95, name: "90% Band", type: "scatter", mode: "lines",
+      line: { color: "rgba(231,76,60,0.25)", width: 1 },
+      fill: "tonexty", fillcolor: "rgba(231,76,60,0.07)", hoverinfo: "skip" },
+    // 50% band (p25–p75 fill)
+    { x: dates, y: percentile_25, type: "scatter", mode: "lines",
+      line: { color: "rgba(41,128,185,0.3)", width: 1 },
+      showlegend: false, hoverinfo: "skip" },
+    { x: dates, y: percentile_75, name: "50% Band", type: "scatter", mode: "lines",
+      line: { color: "rgba(41,128,185,0.3)", width: 1 },
+      fill: "tonexty", fillcolor: "rgba(41,128,185,0.1)", hoverinfo: "skip" },
+    // Median forecast
+    { x: dates, y: percentile_50, name: "Median Forecast", type: "scatter", mode: "lines",
+      line: { color: "#2980b9", dash: "dash", width: 2 },
+      hovertemplate: "<b>Median</b>: $%{y:.2f}<extra></extra>" },
+    // Actual price
+    { x: dates, y: actual, name: "Actual Price", type: "scatter", mode: "lines",
+      line: { color: "#1a3a5c", width: 2.5 },
+      hovertemplate: "<b>Actual</b>: $%{y:.2f}<extra></extra>" },
+  ];
+
+  const layout = {
+    margin: { t: 20, r: 20, b: 50, l: 60 },
+    paper_bgcolor: "#fff", plot_bgcolor: "#f8fafc",
+    xaxis: { title: "Date", showgrid: true, gridcolor: "#e2ecf5", tickfont: { size: 11 } },
+    yaxis: { title: "Price (USD)", showgrid: true, gridcolor: "#e2ecf5",
+             tickprefix: "$", tickfont: { size: 11 } },
+    legend: { orientation: "h", y: -0.15, x: 0.5, xanchor: "center" },
+    hovermode: "x unified",
+  };
+
+  Plotly.newPlot("backtest-chart", traces, layout, { responsive: true, displayModeBar: false });
+
+  document.getElementById("bt-title").textContent = `${ticker} — Backtest`;
+  document.getElementById("bt-model-badge").textContent = model;
+
+  const cov90 = (coverage.band_90 * 100).toFixed(1);
+  const cov50 = (coverage.band_50 * 100).toFixed(1);
+  const good90 = Math.abs(coverage.band_90 - 0.90) <= 0.08;
+  const good50 = Math.abs(coverage.band_50 - 0.50) <= 0.10;
+
+  const el90 = document.getElementById("bt-cov90");
+  el90.textContent = `${cov90}%`;
+  el90.className = "stat-value " + (good90 ? "coverage-good" : "coverage-bad");
+
+  const el50 = document.getElementById("bt-cov50");
+  el50.textContent = `${cov50}%`;
+  el50.className = "stat-value " + (good50 ? "coverage-good" : "coverage-bad");
+
+  const bothGood = good90 && good50;
+  const calEl = document.getElementById("bt-calibration");
+  calEl.textContent = bothGood ? "Well calibrated" : "Needs review";
+  calEl.className = "stat-value " + (bothGood ? "coverage-good" : "coverage-bad");
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CSV download
@@ -679,6 +836,11 @@ function setLoading(on) {
   document.getElementById("loading-card").classList.toggle("hidden", !on);
   document.getElementById("run-btn").disabled = on;
   document.getElementById("run-btn").textContent = on ? "Running…" : "▶ Run Simulation";
+}
+function setBtLoading(on) {
+  document.getElementById("loading-card").classList.toggle("hidden", !on);
+  document.getElementById("backtest-btn").disabled = on;
+  document.getElementById("backtest-btn").textContent = on ? "Running…" : "📈 Backtest";
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

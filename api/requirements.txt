@@ -1,4 +1,5 @@
 yfinance>=0.2.54
+arch>=6.0
 numpy>=1.26,<2.0
 pandas>=2.1
 requests>=2.31

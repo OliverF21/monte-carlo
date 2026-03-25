@@ -3,10 +3,87 @@ import json
 import numpy as np
 import pandas as pd
 import yfinance as yf
-from datetime import datetime, timedelta
 
-# Vercel's filesystem is read-only except /tmp — point yfinance cache there
 yf.set_tz_cache_location("/tmp")
+
+try:
+    from arch import arch_model as _arch_model
+    _ARCH = True
+except Exception:
+    _ARCH = False
+
+
+def _garch_simulate(log_returns, current_price, n_sims, n_days):
+    """GARCH(1,1) with Student-t innovations.
+
+    Captures two well-documented features of equity returns that plain GBM misses:
+      - Volatility clustering: volatile days tend to cluster together
+      - Fat tails: extreme moves happen more often than a normal distribution predicts
+
+    The model at each step:
+        sigma2_t = omega + alpha * shock_{t-1}^2 + beta * sigma2_{t-1}
+        shock_t  = sqrt(sigma2_t) * z,  z ~ t(nu) standardised to unit variance
+        r_t      = mu + shock_t
+        S_t      = S_{t-1} * exp(r_t)
+    """
+    r = log_returns * 100  # arch library works in percentage returns
+    mdl = _arch_model(r, mean='Constant', vol='GARCH', p=1, q=1, dist='t')
+    res = mdl.fit(disp='off', show_warning=False)
+
+    mu_pct = float(res.params['mu'])
+    omega  = float(res.params['omega'])
+    alpha  = float(res.params['alpha[1]'])
+    beta   = float(res.params['beta[1]'])
+    nu     = float(res.params['nu'])
+
+    # Seed the simulation from the last observed conditional variance
+    sig2 = float(res.conditional_volatility[-1]) ** 2
+
+    # Vectorise across simulations; iterate over time (GARCH is path-dependent)
+    sig2_v  = np.full(n_sims, sig2)
+    price_v = np.full(n_sims, float(current_price))
+    paths   = np.empty((n_sims, n_days + 1))
+    paths[:, 0] = current_price
+
+    # Scale factor to give t(nu) unit variance: sqrt(nu/(nu-2))
+    std_scale = np.sqrt(nu / (nu - 2)) if nu > 2 else 1.0
+
+    for d in range(n_days):
+        z       = np.random.standard_t(nu, size=n_sims) / std_scale
+        shock   = np.sqrt(sig2_v) * z          # in pct units
+        ret     = (mu_pct + shock) / 100       # back to decimal log return
+        price_v = price_v * np.exp(ret)
+        paths[:, d + 1] = price_v
+        sig2_v  = omega + alpha * shock ** 2 + beta * sig2_v
+
+    info = {
+        'model':        'GARCH(1,1)-t',
+        'annual_drift': round(mu_pct / 100 * 252, 4),
+        'annual_vol':   round(np.sqrt(sig2) / 100 * np.sqrt(252), 4),
+        'garch_alpha':  round(alpha, 4),
+        'garch_beta':   round(beta, 4),
+        't_df':         round(nu, 2),
+    }
+    return paths, info
+
+
+def _gbm_simulate(log_returns, current_price, n_sims, n_days):
+    """Fallback: plain GBM with constant volatility and normal innovations."""
+    mu    = float(log_returns.mean())
+    sigma = float(log_returns.std())
+    drift = mu - 0.5 * sigma ** 2
+    Z     = np.random.normal(0, 1, (n_sims, n_days))
+    facts = np.exp(drift + sigma * Z)
+    paths = np.empty((n_sims, n_days + 1))
+    paths[:, 0] = current_price
+    for t in range(1, n_days + 1):
+        paths[:, t] = paths[:, t - 1] * facts[:, t - 1]
+    info = {
+        'model':        'GBM',
+        'annual_drift': round(mu * 252, 4),
+        'annual_vol':   round(sigma * np.sqrt(252), 4),
+    }
+    return paths, info
 
 
 class handler(BaseHTTPRequestHandler):
@@ -27,76 +104,66 @@ class handler(BaseHTTPRequestHandler):
             body = self.rfile.read(content_length)
             params = json.loads(body)
 
-            ticker = params.get("ticker", "AAPL").upper().strip()
-            lookback = params.get("lookback", "2y")
+            ticker        = params.get("ticker", "AAPL").upper().strip()
+            lookback      = params.get("lookback", "2y")
             n_simulations = min(int(params.get("simulations", 500)), 1000)
             forecast_days = min(int(params.get("forecast_days", 252)), 504)
 
             # ── 1. Fetch historical data ──────────────────────────────────────
-            hist = yf.download(
-                ticker,
-                period=lookback,
-                auto_adjust=True,
-                progress=False,
-                threads=False,
-            )
-
+            hist = yf.download(ticker, period=lookback, auto_adjust=True,
+                               progress=False, threads=False)
             if hist.empty or len(hist) < 30:
-                self._send_error(400, f"Ticker '{ticker}' not found or has insufficient history. Check the symbol and try again.")
+                self._send_error(400, f"Ticker '{ticker}' not found or has insufficient history.")
                 return
-
-            # Flatten MultiIndex columns (yf.download returns them for single tickers in 0.2.x)
             if isinstance(hist.columns, pd.MultiIndex):
                 hist.columns = hist.columns.get_level_values(0)
 
-            close = hist["Close"].dropna()
+            close         = hist["Close"].dropna()
             current_price = float(close.iloc[-1])
+            log_returns   = np.log(close / close.shift(1)).dropna().values
 
-            # ── 2. Estimate GBM parameters from log returns ───────────────────
-            log_returns = np.log(close / close.shift(1)).dropna().values
-            mu = float(log_returns.mean())      # mean daily log return (drift)
-            sigma = float(log_returns.std())    # daily volatility
+            # ── 2. Simulate paths ─────────────────────────────────────────────
+            np.random.seed(None)
+            if _ARCH and len(log_returns) >= 100:
+                try:
+                    paths, model_info = _garch_simulate(
+                        log_returns, current_price, n_simulations, forecast_days)
+                except Exception:
+                    paths, model_info = _gbm_simulate(
+                        log_returns, current_price, n_simulations, forecast_days)
+            else:
+                paths, model_info = _gbm_simulate(
+                    log_returns, current_price, n_simulations, forecast_days)
 
-            # ── 3. Simulate N price paths (Geometric Brownian Motion) ─────────
-            #   S(t) = S(t-1) * exp( (mu - 0.5*sigma^2)*dt + sigma*sqrt(dt)*Z )
-            #   where Z ~ N(0,1), dt = 1 trading day
-            np.random.seed(None)  # fresh randomness each run
-            drift = mu - 0.5 * sigma ** 2
-            Z = np.random.normal(0, 1, (n_simulations, forecast_days))
-            daily_factors = np.exp(drift + sigma * Z)  # shape: (N, forecast_days)
-
-            # Build price matrix: shape (N, forecast_days+1), col 0 = current price
-            paths = np.empty((n_simulations, forecast_days + 1))
-            paths[:, 0] = current_price
-            for t in range(1, forecast_days + 1):
-                paths[:, t] = paths[:, t - 1] * daily_factors[:, t - 1]
-
-            # ── 4. Build forecast date index (business days) ──────────────────
-            last_date = hist.index[-1].to_pydatetime()
+            # ── 3. Date index ─────────────────────────────────────────────────
+            last_date    = hist.index[-1].to_pydatetime()
             future_dates = pd.bdate_range(start=last_date, periods=forecast_days + 1)
-            dates = [d.strftime("%Y-%m-%d") for d in future_dates]
+            dates        = [d.strftime("%Y-%m-%d") for d in future_dates]
 
-            # ── 5. Percentile bands ───────────────────────────────────────────
+            # ── 4. Percentile bands ───────────────────────────────────────────
             p5  = np.percentile(paths, 5,  axis=0).tolist()
             p50 = np.percentile(paths, 50, axis=0).tolist()
             p95 = np.percentile(paths, 95, axis=0).tolist()
 
-            # ── 6. Summary statistics ─────────────────────────────────────────
-            final_prices  = paths[:, -1]
-            median_final  = float(np.median(final_prices))
-            p5_final      = float(np.percentile(final_prices, 5))
-            p95_final     = float(np.percentile(final_prices, 95))
-            prob_gain     = float(np.mean(final_prices > current_price))
-            var_95_1day   = float(np.percentile(log_returns, 5))   # 1-day 95% VaR (log return)
-            annual_vol    = float(sigma * np.sqrt(252))
-            annual_drift  = float(mu * 252)
+            # ── 5. Summary statistics ─────────────────────────────────────────
+            final_prices = paths[:, -1]
+            var_95_1day  = float(np.percentile(log_returns, 5))
 
-            # ── 7. Sample paths for chart (max 100 for performance) ───────────
-            n_display = min(100, n_simulations)
-            idx = np.random.choice(n_simulations, n_display, replace=False)
+            stats = {
+                'median_final': round(float(np.median(final_prices)), 2),
+                'p5_final':     round(float(np.percentile(final_prices, 5)), 2),
+                'p95_final':    round(float(np.percentile(final_prices, 95)), 2),
+                'prob_gain':    round(float(np.mean(final_prices > current_price)), 4),
+                'var_95_1day':  round(var_95_1day, 4),
+                **model_info,
+            }
+
+            # ── 6. Sample paths for chart (cap at 100) ────────────────────────
+            n_display     = min(100, n_simulations)
+            idx           = np.random.choice(n_simulations, n_display, replace=False)
             display_paths = paths[idx].tolist()
 
-            # ── 8. Build CSV (all simulations) ────────────────────────────────
+            # ── 7. CSV ────────────────────────────────────────────────────────
             header_row = "date," + ",".join(f"sim_{i+1}" for i in range(n_simulations))
             rows = [header_row]
             for t, date in enumerate(dates):
@@ -104,26 +171,17 @@ class handler(BaseHTTPRequestHandler):
                 rows.append(f"{date},{vals}")
             csv_data = "\n".join(rows)
 
-            # ── 9. Build and send response ────────────────────────────────────
             response = {
-                "ticker": ticker,
+                "ticker":        ticker,
                 "current_price": round(current_price, 4),
                 "forecast_days": forecast_days,
-                "dates": dates,
-                "paths": display_paths,
-                "percentile_5": p5,
+                "dates":         dates,
+                "paths":         display_paths,
+                "percentile_5":  p5,
                 "percentile_50": p50,
                 "percentile_95": p95,
-                "stats": {
-                    "median_final": round(median_final, 2),
-                    "p5_final": round(p5_final, 2),
-                    "p95_final": round(p95_final, 2),
-                    "prob_gain": round(prob_gain, 4),
-                    "var_95_1day": round(var_95_1day, 4),
-                    "annual_vol": round(annual_vol, 4),
-                    "annual_drift": round(annual_drift, 4),
-                },
-                "csv_data": csv_data,
+                "stats":         stats,
+                "csv_data":      csv_data,
             }
 
             body_bytes = json.dumps(response).encode("utf-8")
@@ -147,4 +205,4 @@ class handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def log_message(self, format, *args):
-        pass  # suppress default access log noise
+        pass

@@ -5,6 +5,9 @@ import pandas as pd
 import yfinance as yf
 from datetime import datetime, timedelta
 
+# Vercel's filesystem is read-only except /tmp — point yfinance cache there
+yf.set_tz_cache_location("/tmp")
+
 
 class handler(BaseHTTPRequestHandler):
 

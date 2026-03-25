@@ -3,6 +3,7 @@ import json
 import numpy as np
 import pandas as pd
 import yfinance as yf
+from scipy.stats import norm as _norm
 
 yf.set_tz_cache_location("/tmp")
 
@@ -14,7 +15,7 @@ except Exception:
 
 
 def _garch_simulate(log_returns, current_price, n_sims, n_days):
-    r = log_returns * 100
+    r   = log_returns * 100
     mdl = _arch_model(r, mean='Constant', vol='GARCH', p=1, q=1, dist='t')
     res = mdl.fit(disp='off', show_warning=False)
     mu_pct = float(res.params['mu'])
@@ -22,7 +23,13 @@ def _garch_simulate(log_returns, current_price, n_sims, n_days):
     alpha  = float(res.params['alpha[1]'])
     beta   = float(res.params['beta[1]'])
     nu     = float(res.params['nu'])
-    sig2   = float(res.conditional_volatility[-1]) ** 2
+    try:
+        mu_se  = float(res.std_err['mu'])
+        t_stat = abs(mu_pct) / mu_se if mu_se > 0 else 0.0
+        mu_pct = mu_pct * min(1.0, t_stat / 2.0)
+    except Exception:
+        pass
+    sig2    = float(res.conditional_volatility[-1]) ** 2
     sig2_v  = np.full(n_sims, sig2)
     price_v = np.full(n_sims, float(current_price))
     paths   = np.empty((n_sims, n_days + 1))
@@ -41,6 +48,10 @@ def _garch_simulate(log_returns, current_price, n_sims, n_days):
 def _gbm_simulate(log_returns, current_price, n_sims, n_days):
     mu    = float(log_returns.mean())
     sigma = float(log_returns.std())
+    n     = len(log_returns)
+    mu_se = sigma / np.sqrt(n) if n > 0 else 1.0
+    t_stat = abs(mu) / mu_se if mu_se > 0 else 0.0
+    mu    = mu * min(1.0, t_stat / 2.0)
     drift = mu - 0.5 * sigma ** 2
     Z     = np.random.normal(0, 1, (n_sims, n_days))
     facts = np.exp(drift + sigma * Z)
@@ -49,6 +60,47 @@ def _gbm_simulate(log_returns, current_price, n_sims, n_days):
     for t in range(1, n_days + 1):
         paths[:, t] = paths[:, t - 1] * facts[:, t - 1]
     return paths, 'GBM'
+
+
+def _compute_calib_factor(close, n_sims=200):
+    cal_len = min(63, max(30, len(close) // 6))
+    if len(close) < cal_len + 100:
+        return 1.0
+    inner = close.iloc[:-cal_len]
+    cal   = close.iloc[-(cal_len + 1):]
+    lr    = np.log(inner / inner.shift(1)).dropna().values
+    start = float(inner.iloc[-1])
+    if len(lr) < 60:
+        return 1.0
+    saved = np.random.get_state()
+    np.random.seed(0)
+    try:
+        if _ARCH and len(lr) >= 100:
+            try:
+                paths, _ = _garch_simulate(lr, start, n_sims, cal_len)
+            except Exception:
+                paths, _ = _gbm_simulate(lr, start, n_sims, cal_len)
+        else:
+            paths, _ = _gbm_simulate(lr, start, n_sims, cal_len)
+    except Exception:
+        np.random.set_state(saved)
+        return 1.0
+    np.random.set_state(saved)
+    actual = cal.values[1:]
+    p5  = np.percentile(paths[:, 1:],  5, axis=0)
+    p95 = np.percentile(paths[:, 1:], 95, axis=0)
+    cov = float(np.mean((actual >= p5) & (actual <= p95)))
+    if cov <= 0.02 or cov >= 0.98:
+        return 1.0
+    k = float(_norm.ppf(0.95) / _norm.ppf((1.0 + cov) / 2.0))
+    return float(np.clip(k, 0.5, 3.0))
+
+
+def _apply_calib(paths, k):
+    if abs(k - 1.0) < 0.02:
+        return paths
+    log_ret = np.log(paths / paths[:, 0:1])
+    return paths[:, 0:1] * np.exp(log_ret * k)
 
 
 class handler(BaseHTTPRequestHandler):
@@ -73,7 +125,6 @@ class handler(BaseHTTPRequestHandler):
             n_simulations = min(int(params.get("simulations", 500)), 1000)
             test_days     = min(int(params.get("test_days", 252)), 252)
 
-            # Fetch 3 years: ~2 years training, last test_days = held-out test set
             hist = yf.download(ticker, period="3y", auto_adjust=True,
                                progress=False, threads=False)
             if hist.empty or len(hist) < test_days + 100:
@@ -83,14 +134,14 @@ class handler(BaseHTTPRequestHandler):
                 hist.columns = hist.columns.get_level_values(0)
 
             close = hist["Close"].dropna()
-
-            # Split: training = everything before last test_days
-            #        test     = last test_days+1 rows (index 0 = last training price)
             train = close.iloc[:-test_days]
             test  = close.iloc[-(test_days + 1):]
 
             current_price = float(train.iloc[-1])
             log_returns   = np.log(train / train.shift(1)).dropna().values
+
+            # Calibration factor derived from training data only (no test data leakage)
+            calib_k = _compute_calib_factor(train)
 
             np.random.seed(None)
             if _ARCH and len(log_returns) >= 100:
@@ -104,6 +155,8 @@ class handler(BaseHTTPRequestHandler):
                 paths, model = _gbm_simulate(
                     log_returns, current_price, n_simulations, test_days)
 
+            paths = _apply_calib(paths, calib_k)
+
             p5  = np.percentile(paths, 5,  axis=0).tolist()
             p25 = np.percentile(paths, 25, axis=0).tolist()
             p50 = np.percentile(paths, 50, axis=0).tolist()
@@ -113,8 +166,6 @@ class handler(BaseHTTPRequestHandler):
             actual = test.values.tolist()
             dates  = [d.strftime("%Y-%m-%d") for d in test.index]
 
-            # Coverage: what % of actual prices fell inside each band?
-            # Skip day 0 — it's the shared starting price (always 100% inside)
             act    = test.values[1:]
             cov_90 = float(np.mean((act >= np.array(p5[1:]))  & (act <= np.array(p95[1:]))))
             cov_50 = float(np.mean((act >= np.array(p25[1:])) & (act <= np.array(p75[1:]))))
@@ -122,6 +173,7 @@ class handler(BaseHTTPRequestHandler):
             response = {
                 "ticker":        ticker,
                 "model":         model,
+                "calib_k":       round(calib_k, 3),
                 "test_days":     test_days,
                 "dates":         dates,
                 "actual":        actual,

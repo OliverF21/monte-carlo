@@ -415,6 +415,10 @@
         <div class="stat-label">1-Day 95% VaR</div>
         <div class="stat-value" id="stat-var">—</div>
       </div>
+      <div class="stat-card">
+        <div class="stat-label">Calib. Factor</div>
+        <div class="stat-value" id="stat-calib">—</div>
+      </div>
     </div>
 
     <p class="disclaimer" style="margin-top:1rem;">
@@ -432,7 +436,7 @@
         <h2 id="bt-title" style="font-size:1.1rem;color:#1a3a5c;"></h2>
         <span id="bt-model-badge" class="model-badge"></span>
       </div>
-      <span style="font-size:.82rem;color:#7a94aa;">Trained on ~2 years &middot; Tested on last 252 trading days</span>
+      <span id="bt-meta" style="font-size:.82rem;color:#7a94aa;">Trained on ~2 years &middot; Tested on last 252 trading days</span>
     </div>
 
     <div id="backtest-chart"></div>
@@ -675,6 +679,10 @@ function renderStats(data) {
   setText("stat-vol",     `${(s.annual_vol * 100).toFixed(1)}%`);
   setText("stat-var",     `${(s.var_95_1day * 100).toFixed(2)}%`);
   document.getElementById("model-badge").textContent = s.model || "GBM";
+  const kEl = document.getElementById("stat-calib");
+  const k   = s.calib_k ?? 1.0;
+  kEl.textContent = `${k.toFixed(2)}×`;
+  kEl.style.color = Math.abs(k - 1.0) < 0.05 ? "" : (k > 1 ? "#c0392b" : "#1e8449");
 }
 
 function setText(id, val) { document.getElementById(id).textContent = val; }
@@ -755,6 +763,8 @@ function renderBacktestChart(data) {
 
   document.getElementById("bt-title").textContent = `${ticker} — Backtest`;
   document.getElementById("bt-model-badge").textContent = model;
+  document.getElementById("bt-meta").textContent =
+    `Trained on ~2 years · Tested on last 252 days · Calib. factor: ${data.calib_k?.toFixed(2) ?? "1.00"}×`;
 
   const cov90 = (coverage.band_90 * 100).toFixed(1);
   const cov50 = (coverage.band_50 * 100).toFixed(1);

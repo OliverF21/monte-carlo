@@ -37,6 +37,10 @@ class handler(BaseHTTPRequestHandler):
                 self._send_error(400, f"Insufficient data for ticker '{ticker}'. Check the symbol and try again.")
                 return
 
+            # Flatten multi-level columns if present (yfinance can return both)
+            if isinstance(hist.columns, pd.MultiIndex):
+                hist.columns = hist.columns.get_level_values(0)
+
             close = hist["Close"].dropna()
             current_price = float(close.iloc[-1])
 

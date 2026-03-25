@@ -1,11 +1,8 @@
 {
+  "outputDirectory": "public",
   "functions": {
     "api/simulate.py": {
       "maxDuration": 30
     }
-  },
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
+  }
 }

@@ -123,9 +123,19 @@ class handler(BaseHTTPRequestHandler):
 
             ticker        = params.get("ticker", "AAPL").upper().strip()
             n_simulations = min(int(params.get("simulations", 500)), 1000)
-            test_days     = min(int(params.get("test_days", 252)), 252)
+            test_days     = min(int(params.get("test_days", 252)), 504)
 
-            hist = yf.download(ticker, period="3y", auto_adjust=True,
+            # Fetch enough history: test period + at least 1 year of training data
+            # test_days/252 years of test + 2 years training, rounded up to next period
+            total_years = test_days / 252 + 2
+            if total_years <= 3:
+                fetch_period = "3y"
+            elif total_years <= 5:
+                fetch_period = "5y"
+            else:
+                fetch_period = "10y"
+
+            hist = yf.download(ticker, period=fetch_period, auto_adjust=True,
                                progress=False, threads=False)
             if hist.empty or len(hist) < test_days + 100:
                 self._send_error(400, f"Insufficient data for '{ticker}'.")

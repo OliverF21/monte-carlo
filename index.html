@@ -355,9 +355,17 @@
 
     </div>
 
-    <div class="btn-row">
+    <div class="btn-row" style="align-items:center;flex-wrap:wrap;gap:.75rem;">
       <button class="btn btn-primary" id="run-btn" onclick="runSimulation()">&#9654; Run Simulation</button>
-      <button class="btn btn-secondary" id="backtest-btn" onclick="runBacktest()">&#128200; Backtest</button>
+      <div style="display:flex;align-items:center;gap:.5rem;">
+        <button class="btn btn-secondary" id="backtest-btn" onclick="runBacktest()">&#128200; Backtest</button>
+        <select id="test_days" style="padding:.5rem .6rem;border:1.5px solid #d1dce8;border-radius:7px;font-size:.88rem;color:#1e2d3d;background:#fff;">
+          <option value="63">3 months</option>
+          <option value="126">6 months</option>
+          <option value="252" selected>1 year</option>
+          <option value="504">2 years</option>
+        </select>
+      </div>
       <button class="btn btn-secondary" id="csv-btn" onclick="downloadCSV()" disabled>&#8595; Download CSV</button>
     </div>
   </div>
@@ -694,6 +702,7 @@ function setHTML(id, val) { document.getElementById(id).innerHTML  = val; }
 async function runBacktest() {
   const ticker      = document.getElementById("ticker").value.trim().toUpperCase();
   const simulations = parseInt(document.getElementById("simulations").value, 10);
+  const test_days   = parseInt(document.getElementById("test_days").value, 10);
 
   if (!ticker) { showError("Please enter a stock ticker symbol."); return; }
 
@@ -705,7 +714,7 @@ async function runBacktest() {
     const res = await fetch("/api/backtest", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ticker, simulations, test_days: 252 }),
+      body: JSON.stringify({ ticker, simulations, test_days }),
     });
     const data = await res.json();
     if (!res.ok || data.error) { showError(data.error || "Backtest failed."); return; }
@@ -763,8 +772,9 @@ function renderBacktestChart(data) {
 
   document.getElementById("bt-title").textContent = `${ticker} — Backtest`;
   document.getElementById("bt-model-badge").textContent = model;
+  const testLabel = document.getElementById("test_days").selectedOptions[0].text;
   document.getElementById("bt-meta").textContent =
-    `Trained on ~2 years · Tested on last 252 days · Calib. factor: ${data.calib_k?.toFixed(2) ?? "1.00"}×`;
+    `Test window: ${testLabel} · Calib. factor: ${data.calib_k?.toFixed(2) ?? "1.00"}×`;
 
   const cov90 = (coverage.band_90 * 100).toFixed(1);
   const cov50 = (coverage.band_50 * 100).toFixed(1);

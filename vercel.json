@@ -2,6 +2,9 @@
   "functions": {
     "api/simulate.py": {
       "maxDuration": 30
+    },
+    "api/backtest.py": {
+      "maxDuration": 30
     }
   }
 }

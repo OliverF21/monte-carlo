@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Monte Carlo Stock Simulator</title>
+
+  <!-- Plotly.js for interactive charts -->
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+  <!-- Highlight.js for Python syntax highlighting -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+
+  <style>
+    /* ── Reset & base ────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f0f4f8;
+      color: #1e2d3d;
+      line-height: 1.5;
+    }
+
+    /* ── Header ──────────────────────────────────────────────────────────── */
+    header {
+      background: linear-gradient(135deg, #1a3a5c 0%, #2980b9 100%);
+      color: #fff;
+      padding: 2rem 1.5rem 1.75rem;
+      text-align: center;
+    }
+    header h1 { font-size: 1.85rem; font-weight: 700; letter-spacing: -0.5px; }
+    header p  { margin-top: .4rem; font-size: .95rem; opacity: .85; }
+
+    /* ── Layout ──────────────────────────────────────────────────────────── */
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2rem 1.25rem 4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    /* ── Cards ───────────────────────────────────────────────────────────── */
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.07);
+      padding: 1.5rem;
+    }
+
+    /* ── Input panel ─────────────────────────────────────────────────────── */
+    .input-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .input-group label {
+      display: block;
+      font-size: .8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      color: #5a7184;
+      margin-bottom: .4rem;
+    }
+
+    .input-group input[type="text"],
+    .input-group select {
+      width: 100%;
+      padding: .55rem .75rem;
+      border: 1.5px solid #d1dce8;
+      border-radius: 7px;
+      font-size: .95rem;
+      color: #1e2d3d;
+      background: #fff;
+      transition: border-color .15s;
+      appearance: none;
+    }
+    .input-group input[type="text"]:focus,
+    .input-group select:focus {
+      outline: none;
+      border-color: #2980b9;
+      box-shadow: 0 0 0 3px rgba(41,128,185,.12);
+    }
+
+    /* ticker: bold uppercase auto-transform handled in JS */
+    #ticker { text-transform: uppercase; font-weight: 600; letter-spacing: 1px; }
+
+    /* slider row */
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+    }
+    .slider-row input[type="range"] {
+      flex: 1;
+      accent-color: #2980b9;
+      cursor: pointer;
+    }
+    .slider-row .slider-val {
+      min-width: 2.5rem;
+      text-align: right;
+      font-weight: 700;
+      font-size: .95rem;
+      color: #1a3a5c;
+    }
+
+    /* ── Buttons ─────────────────────────────────────────────────────────── */
+    .btn-row {
+      display: flex;
+      gap: .75rem;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: .6rem 1.4rem;
+      border: none;
+      border-radius: 7px;
+      font-size: .92rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .15s, transform .1s;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+
+    .btn-primary { background: #2980b9; color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: #1f6fa0; }
+
+    .btn-secondary { background: #e8f4fd; color: #2980b9; border: 1.5px solid #b3d7f0; }
+    .btn-secondary:hover:not(:disabled) { background: #d0eaf8; }
+
+    /* ── Error & loading ─────────────────────────────────────────────────── */
+    .hidden { display: none !important; }
+
+    #error-msg {
+      background: #fdf0f0;
+      border: 1.5px solid #f5c6c6;
+      color: #c0392b;
+      border-radius: 8px;
+      padding: .85rem 1.1rem;
+      font-size: .9rem;
+    }
+
+    .loading-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      padding: 2.5rem 0;
+    }
+    .spinner {
+      width: 42px; height: 42px;
+      border: 4px solid #d1dce8;
+      border-top-color: #2980b9;
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Chart area ──────────────────────────────────────────────────────── */
+    #chart { width: 100%; height: 480px; }
+
+    /* ── Stats grid ──────────────────────────────────────────────────────── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: .85rem;
+      margin-top: 1.25rem;
+    }
+
+    .stat-card {
+      background: #f8fafc;
+      border: 1.5px solid #e2ecf5;
+      border-radius: 10px;
+      padding: .9rem 1rem;
+      text-align: center;
+    }
+    .stat-card.median  { background: #eaf4fd; border-color: #90c8ee; }
+    .stat-card.bear    { background: #fdf4f3; border-color: #f0b8b3; }
+    .stat-card.bull    { background: #f0faf3; border-color: #96d9ad; }
+
+    .stat-label {
+      font-size: .7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      color: #7a94aa;
+      margin-bottom: .3rem;
+    }
+    .stat-value {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #1a3a5c;
+    }
+    .stat-card.bear .stat-value { color: #c0392b; }
+    .stat-card.bull .stat-value { color: #1e8449; }
+
+    /* ── Code section ────────────────────────────────────────────────────── */
+    .code-toggle-btn {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: none;
+      border: none;
+      padding: .1rem 0;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #1a3a5c;
+      gap: .5rem;
+    }
+    .code-toggle-btn:hover { color: #2980b9; }
+    .code-toggle-btn .chevron {
+      font-style: normal;
+      transition: transform .2s;
+      font-size: .85rem;
+    }
+    .code-toggle-btn.open .chevron { transform: rotate(180deg); }
+
+    .code-panel { margin-top: 1.25rem; }
+
+    .code-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f0f4f8;
+      border: 1px solid #d1dce8;
+      border-bottom: none;
+      border-radius: 8px 8px 0 0;
+      padding: .5rem 1rem;
+      font-size: .8rem;
+      color: #5a7184;
+      font-family: monospace;
+    }
+
+    .copy-btn {
+      background: #2980b9;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      padding: .25rem .75rem;
+      font-size: .78rem;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background .15s;
+    }
+    .copy-btn:hover { background: #1f6fa0; }
+    .copy-btn.copied { background: #27ae60; }
+
+    .code-panel pre {
+      margin: 0;
+      border-radius: 0 0 8px 8px;
+      border: 1px solid #d1dce8;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    .code-panel pre code {
+      font-size: .82rem;
+      line-height: 1.55;
+    }
+
+    /* ── Footer note ─────────────────────────────────────────────────────── */
+    .disclaimer {
+      font-size: .78rem;
+      color: #7a94aa;
+      text-align: center;
+      padding-top: .5rem;
+    }
+
+    /* ── Responsive ──────────────────────────────────────────────────────── */
+    @media (max-width: 600px) {
+      header h1 { font-size: 1.4rem; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      #chart { height: 340px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Monte Carlo Stock Simulator</h1>
+  <p>Geometric Brownian Motion price forecasting for equity analysis</p>
+</header>
+
+<main>
+
+  <!-- ── Input Card ──────────────────────────────────────────────────────── -->
+  <div class="card">
+    <div class="input-grid">
+
+      <div class="input-group">
+        <label for="ticker">Stock Ticker</label>
+        <input type="text" id="ticker" value="AAPL" placeholder="e.g. AAPL, TSLA, MSFT"
+               oninput="this.value=this.value.toUpperCase()" />
+      </div>
+
+      <div class="input-group">
+        <label for="lookback">Historical Lookback</label>
+        <select id="lookback">
+          <option value="6mo">6 Months</option>
+          <option value="1y">1 Year</option>
+          <option value="2y" selected>2 Years</option>
+          <option value="5y">5 Years</option>
+          <option value="10y">10 Years</option>
+        </select>
+      </div>
+
+      <div class="input-group">
+        <label>Simulations: <span id="sim-display">500</span></label>
+        <div class="slider-row">
+          <input type="range" id="simulations" min="100" max="1000" step="100" value="500"
+                 oninput="document.getElementById('sim-display').textContent=this.value" />
+          <span class="slider-val" id="sim-val">500</span>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label for="forecast_days">Forecast Horizon</label>
+        <select id="forecast_days">
+          <option value="30">30 Days</option>
+          <option value="90">90 Days</option>
+          <option value="180">6 Months</option>
+          <option value="252" selected>1 Year (252 days)</option>
+          <option value="504">2 Years (504 days)</option>
+        </select>
+      </div>
+
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" id="run-btn" onclick="runSimulation()">&#9654; Run Simulation</button>
+      <button class="btn btn-secondary" id="csv-btn" onclick="downloadCSV()" disabled>&#8595; Download CSV</button>
+    </div>
+  </div>
+
+  <!-- ── Error ───────────────────────────────────────────────────────────── -->
+  <div id="error-msg" class="hidden"></div>
+
+  <!-- ── Loading ────────────────────────────────────────────────────────── -->
+  <div class="card hidden" id="loading-card">
+    <div class="loading-wrap">
+      <div class="spinner"></div>
+      <span style="color:#5a7184;font-size:.9rem;">Fetching data &amp; running simulation&hellip;</span>
+    </div>
+  </div>
+
+  <!-- ── Results Card ────────────────────────────────────────────────────── -->
+  <div class="card hidden" id="results-card">
+
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.5rem;flex-wrap:wrap;gap:.5rem;">
+      <h2 id="chart-title" style="font-size:1.1rem;color:#1a3a5c;"></h2>
+      <span id="chart-subtitle" style="font-size:.82rem;color:#7a94aa;"></span>
+    </div>
+
+    <div id="chart"></div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Current Price</div>
+        <div class="stat-value" id="stat-current">—</div>
+      </div>
+      <div class="stat-card median">
+        <div class="stat-label">Median Forecast</div>
+        <div class="stat-value" id="stat-median">—</div>
+      </div>
+      <div class="stat-card bear">
+        <div class="stat-label">Bear (5th pct)</div>
+        <div class="stat-value" id="stat-p5">—</div>
+      </div>
+      <div class="stat-card bull">
+        <div class="stat-label">Bull (95th pct)</div>
+        <div class="stat-value" id="stat-p95">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Prob. of Gain</div>
+        <div class="stat-value" id="stat-prob">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Annual Volatility</div>
+        <div class="stat-value" id="stat-vol">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">1-Day 95% VaR</div>
+        <div class="stat-value" id="stat-var">—</div>
+      </div>
+    </div>
+
+    <p class="disclaimer" style="margin-top:1rem;">
+      Simulation uses Geometric Brownian Motion calibrated on historical log returns.
+      For educational purposes only — not investment advice.
+    </p>
+
+  </div>
+
+  <!-- ── Code Section ────────────────────────────────────────────────────── -->
+  <div class="card">
+    <button class="code-toggle-btn" id="code-toggle-btn" onclick="toggleCode()">
+      <span>&#128196; View Python Code</span>
+      <i class="chevron">&#9660;</i>
+    </button>
+
+    <div class="code-panel hidden" id="code-panel">
+      <div class="code-header">
+        <span>api/simulate.py</span>
+        <button class="copy-btn" id="copy-btn" onclick="copyCode()">Copy</button>
+      </div>
+      <pre><code class="language-python" id="code-content"></code></pre>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// State
+// ─────────────────────────────────────────────────────────────────────────────
+let lastCsvData  = null;
+let lastTicker   = null;
+
+// Sync slider display
+document.getElementById("simulations").addEventListener("input", function () {
+  document.getElementById("sim-display").textContent = this.value;
+  document.getElementById("sim-val").textContent     = this.value;
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Run simulation
+// ─────────────────────────────────────────────────────────────────────────────
+async function runSimulation() {
+  const ticker       = document.getElementById("ticker").value.trim().toUpperCase();
+  const lookback     = document.getElementById("lookback").value;
+  const simulations  = parseInt(document.getElementById("simulations").value, 10);
+  const forecast_days = parseInt(document.getElementById("forecast_days").value, 10);
+
+  if (!ticker) {
+    showError("Please enter a stock ticker symbol.");
+    return;
+  }
+
+  // Reset UI
+  hideError();
+  setLoading(true);
+  document.getElementById("results-card").classList.add("hidden");
+  document.getElementById("csv-btn").disabled = true;
+
+  try {
+    const res = await fetch("/api/simulate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ticker, lookback, simulations, forecast_days }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || data.error) {
+      showError(data.error || "An unexpected error occurred. Please try again.");
+      return;
+    }
+
+    lastCsvData = data.csv_data;
+    lastTicker  = data.ticker;
+
+    renderChart(data);
+    renderStats(data);
+
+    document.getElementById("results-card").classList.remove("hidden");
+    document.getElementById("csv-btn").disabled = false;
+
+  } catch (err) {
+    showError("Network error: " + err.message);
+  } finally {
+    setLoading(false);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Render Plotly chart
+// ─────────────────────────────────────────────────────────────────────────────
+function renderChart(data) {
+  const { ticker, dates, paths, percentile_5, percentile_50, percentile_95,
+          current_price, forecast_days, stats } = data;
+
+  const traces = [];
+
+  // Individual simulation paths (light grey, skip legend)
+  paths.forEach((path, i) => {
+    traces.push({
+      x: dates,
+      y: path,
+      type: "scatter",
+      mode: "lines",
+      line: { color: "rgba(160,180,200,0.18)", width: 1 },
+      showlegend: false,
+      hoverinfo: "skip",
+    });
+  });
+
+  // 5th percentile (bear)
+  traces.push({
+    x: dates,
+    y: percentile_5,
+    name: "5th Pct (Bear)",
+    type: "scatter",
+    mode: "lines",
+    line: { color: "#e74c3c", dash: "dash", width: 2 },
+    hovertemplate: "<b>5th Pct</b>: $%{y:.2f}<extra></extra>",
+  });
+
+  // 95th percentile (bull)
+  traces.push({
+    x: dates,
+    y: percentile_95,
+    name: "95th Pct (Bull)",
+    type: "scatter",
+    mode: "lines",
+    line: { color: "#27ae60", dash: "dash", width: 2 },
+    hovertemplate: "<b>95th Pct</b>: $%{y:.2f}<extra></extra>",
+    fill: "tonexty",
+    fillcolor: "rgba(39,174,96,0.05)",
+  });
+
+  // Median path
+  traces.push({
+    x: dates,
+    y: percentile_50,
+    name: "Median",
+    type: "scatter",
+    mode: "lines",
+    line: { color: "#2980b9", width: 2.5 },
+    hovertemplate: "<b>Median</b>: $%{y:.2f}<extra></extra>",
+  });
+
+  const forecastLabel = document.getElementById("forecast_days").selectedOptions[0].text;
+  const lookbackLabel = document.getElementById("lookback").selectedOptions[0].text;
+
+  document.getElementById("chart-title").textContent =
+    `${ticker} — ${data.simulations || paths.length} Simulations`;
+  document.getElementById("chart-subtitle").textContent =
+    `Lookback: ${lookbackLabel} · Forecast: ${forecastLabel} · Calibrated on ${Math.round(252 * parseFloat(document.getElementById("lookback").value))} trading days`;
+
+  const layout = {
+    margin: { t: 20, r: 20, b: 50, l: 60 },
+    paper_bgcolor: "#fff",
+    plot_bgcolor: "#f8fafc",
+    xaxis: {
+      title: "Date",
+      showgrid: true,
+      gridcolor: "#e2ecf5",
+      tickfont: { size: 11 },
+    },
+    yaxis: {
+      title: "Price (USD)",
+      showgrid: true,
+      gridcolor: "#e2ecf5",
+      tickprefix: "$",
+      tickfont: { size: 11 },
+    },
+    legend: {
+      orientation: "h",
+      y: -0.15,
+      x: 0.5,
+      xanchor: "center",
+    },
+    shapes: [
+      {
+        type: "line",
+        x0: dates[0],
+        x1: dates[dates.length - 1],
+        y0: current_price,
+        y1: current_price,
+        line: { color: "#f39c12", dash: "dot", width: 1.5 },
+      },
+    ],
+    annotations: [
+      {
+        x: dates[Math.floor(dates.length * 0.05)],
+        y: current_price,
+        text: `Current: $${current_price.toFixed(2)}`,
+        showarrow: false,
+        font: { size: 10, color: "#f39c12" },
+        yshift: 10,
+      },
+    ],
+    hovermode: "x unified",
+  };
+
+  Plotly.newPlot("chart", traces, layout, { responsive: true, displayModeBar: false });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Render stats cards
+// ─────────────────────────────────────────────────────────────────────────────
+function renderStats(data) {
+  const s = data.stats;
+  const cp = data.current_price;
+
+  const updown = (val) => val >= cp
+    ? `<span style="color:#1e8449">▲</span>`
+    : `<span style="color:#c0392b">▼</span>`;
+
+  setText("stat-current", `$${cp.toFixed(2)}`);
+  setHTML("stat-median",  `$${s.median_final.toFixed(2)} ${updown(s.median_final)}`);
+  setText("stat-p5",      `$${s.p5_final.toFixed(2)}`);
+  setText("stat-p95",     `$${s.p95_final.toFixed(2)}`);
+  setText("stat-prob",    `${(s.prob_gain * 100).toFixed(1)}%`);
+  setText("stat-vol",     `${(s.annual_vol * 100).toFixed(1)}%`);
+  setText("stat-var",     `${(s.var_95_1day * 100).toFixed(2)}%`);
+}
+
+function setText(id, val) { document.getElementById(id).textContent = val; }
+function setHTML(id, val) { document.getElementById(id).innerHTML  = val; }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CSV download
+// ─────────────────────────────────────────────────────────────────────────────
+function downloadCSV() {
+  if (!lastCsvData) return;
+  const blob = new Blob([lastCsvData], { type: "text/csv;charset=utf-8;" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href     = url;
+  a.download = `${lastTicker || "simulation"}_monte_carlo.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Code viewer
+// ─────────────────────────────────────────────────────────────────────────────
+function toggleCode() {
+  const panel = document.getElementById("code-panel");
+  const btn   = document.getElementById("code-toggle-btn");
+  const hidden = panel.classList.toggle("hidden");
+  btn.classList.toggle("open", !hidden);
+
+  // Populate on first open
+  if (!hidden && !document.getElementById("code-content").dataset.highlighted) {
+    document.getElementById("code-content").textContent = PYTHON_SOURCE;
+    hljs.highlightElement(document.getElementById("code-content"));
+    document.getElementById("code-content").dataset.highlighted = "yes";
+  }
+}
+
+async function copyCode() {
+  try {
+    await navigator.clipboard.writeText(PYTHON_SOURCE);
+    const btn = document.getElementById("copy-btn");
+    btn.textContent = "Copied!";
+    btn.classList.add("copied");
+    setTimeout(() => {
+      btn.textContent = "Copy";
+      btn.classList.remove("copied");
+    }, 2000);
+  } catch {
+    alert("Copy failed — please select the code manually.");
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UI helpers
+// ─────────────────────────────────────────────────────────────────────────────
+function showError(msg) {
+  const el = document.getElementById("error-msg");
+  el.textContent = "⚠ " + msg;
+  el.classList.remove("hidden");
+}
+function hideError() {
+  document.getElementById("error-msg").classList.add("hidden");
+}
+function setLoading(on) {
+  document.getElementById("loading-card").classList.toggle("hidden", !on);
+  document.getElementById("run-btn").disabled = on;
+  document.getElementById("run-btn").textContent = on ? "Running…" : "▶ Run Simulation";
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Python source (embedded for the code viewer)
+// ─────────────────────────────────────────────────────────────────────────────
+const PYTHON_SOURCE = `from http.server import BaseHTTPRequestHandler
+import json
+import numpy as np
+import pandas as pd
+import yfinance as yf
+
+
+class handler(BaseHTTPRequestHandler):
+
+    def send_cors_headers(self):
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_cors_headers()
+        self.end_headers()
+
+    def do_POST(self):
+        try:
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length)
+            params = json.loads(body)
+
+            ticker       = params.get("ticker", "AAPL").upper().strip()
+            lookback     = params.get("lookback", "2y")
+            n_simulations = min(int(params.get("simulations", 500)), 1000)
+            forecast_days = min(int(params.get("forecast_days", 252)), 504)
+
+            # 1. Fetch historical data via yfinance
+            stock = yf.Ticker(ticker)
+            hist  = stock.history(period=lookback)
+
+            if hist.empty or len(hist) < 30:
+                self._send_error(400, f"Insufficient data for ticker '{ticker}'.")
+                return
+
+            close         = hist["Close"].dropna()
+            current_price = float(close.iloc[-1])
+
+            # 2. Estimate GBM parameters from log returns
+            log_returns = np.log(close / close.shift(1)).dropna().values
+            mu    = float(log_returns.mean())   # mean daily log return
+            sigma = float(log_returns.std())    # daily volatility
+
+            # 3. Simulate N price paths (Geometric Brownian Motion)
+            #
+            #   S(t) = S(t-1) * exp( (mu - 0.5*sigma^2)*dt + sigma*sqrt(dt)*Z )
+            #
+            #   where Z ~ N(0,1) and dt = 1 trading day
+            #
+            np.random.seed(None)
+            drift        = mu - 0.5 * sigma ** 2
+            Z            = np.random.normal(0, 1, (n_simulations, forecast_days))
+            daily_factors = np.exp(drift + sigma * Z)
+
+            paths      = np.empty((n_simulations, forecast_days + 1))
+            paths[:, 0] = current_price
+            for t in range(1, forecast_days + 1):
+                paths[:, t] = paths[:, t - 1] * daily_factors[:, t - 1]
+
+            # 4. Build forecast date index (business days)
+            last_date    = hist.index[-1].to_pydatetime()
+            future_dates = pd.bdate_range(start=last_date, periods=forecast_days + 1)
+            dates        = [d.strftime("%Y-%m-%d") for d in future_dates]
+
+            # 5. Percentile bands across all simulations
+            p5  = np.percentile(paths, 5,  axis=0).tolist()
+            p50 = np.percentile(paths, 50, axis=0).tolist()
+            p95 = np.percentile(paths, 95, axis=0).tolist()
+
+            # 6. Summary statistics
+            final_prices = paths[:, -1]
+            stats = {
+                "median_final" : round(float(np.median(final_prices)),    2),
+                "p5_final"     : round(float(np.percentile(final_prices, 5)),  2),
+                "p95_final"    : round(float(np.percentile(final_prices, 95)), 2),
+                "prob_gain"    : round(float(np.mean(final_prices > current_price)), 4),
+                "var_95_1day"  : round(float(np.percentile(log_returns, 5)),   4),
+                "annual_vol"   : round(float(sigma * np.sqrt(252)),           4),
+                "annual_drift" : round(float(mu * 252),                       4),
+            }
+
+            # 7. Sample paths for chart (cap at 100 for performance)
+            n_display = min(100, n_simulations)
+            idx       = np.random.choice(n_simulations, n_display, replace=False)
+            display_paths = paths[idx].tolist()
+
+            # 8. Build CSV (all simulations)
+            header = "date," + ",".join(f"sim_{i+1}" for i in range(n_simulations))
+            rows   = [header]
+            for t, date in enumerate(dates):
+                vals = ",".join(f"{paths[s, t]:.4f}" for s in range(n_simulations))
+                rows.append(f"{date},{vals}")
+            csv_data = "\\n".join(rows)
+
+            # 9. Send JSON response
+            response = {
+                "ticker"       : ticker,
+                "current_price": round(current_price, 4),
+                "forecast_days": forecast_days,
+                "dates"        : dates,
+                "paths"        : display_paths,
+                "percentile_5" : p5,
+                "percentile_50": p50,
+                "percentile_95": p95,
+                "stats"        : stats,
+                "csv_data"     : csv_data,
+            }
+
+            body_bytes = json.dumps(response).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body_bytes)))
+            self.send_cors_headers()
+            self.end_headers()
+            self.wfile.write(body_bytes)
+
+        except Exception as e:
+            self._send_error(500, str(e))
+
+    def _send_error(self, code, message):
+        body = json.dumps({"error": message}).encode("utf-8")
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_cors_headers()
+        self.end_headers()
+        self.wfile.write(body)
+
+    def log_message(self, format, *args):
+        pass  # suppress access log noise
+`;
+</script>
+
+</body>
+</html>

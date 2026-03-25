@@ -30,14 +30,19 @@ class handler(BaseHTTPRequestHandler):
             forecast_days = min(int(params.get("forecast_days", 252)), 504)
 
             # ── 1. Fetch historical data ──────────────────────────────────────
-            stock = yf.Ticker(ticker)
-            hist = stock.history(period=lookback)
+            hist = yf.download(
+                ticker,
+                period=lookback,
+                auto_adjust=True,
+                progress=False,
+                threads=False,
+            )
 
             if hist.empty or len(hist) < 30:
-                self._send_error(400, f"Insufficient data for ticker '{ticker}'. Check the symbol and try again.")
+                self._send_error(400, f"Ticker '{ticker}' not found or has insufficient history. Check the symbol and try again.")
                 return
 
-            # Flatten multi-level columns if present (yfinance can return both)
+            # Flatten MultiIndex columns (yf.download returns them for single tickers in 0.2.x)
             if isinstance(hist.columns, pd.MultiIndex):
                 hist.columns = hist.columns.get_level_values(0)
 

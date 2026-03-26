@@ -688,9 +688,13 @@ function renderStats(data) {
   setText("stat-var",     `${(s.var_95_1day * 100).toFixed(2)}%`);
   document.getElementById("model-badge").textContent = s.model || "GBM";
   const kEl = document.getElementById("stat-calib");
-  const k   = s.calib_k ?? 1.0;
-  kEl.textContent = `${k.toFixed(2)}×`;
-  kEl.style.color = Math.abs(k - 1.0) < 0.05 ? "" : (k > 1 ? "#c0392b" : "#1e8449");
+  if (s.calib_k != null) {
+    kEl.textContent = `${s.calib_k.toFixed(2)}×`;
+    kEl.style.color = Math.abs(s.calib_k - 1.0) < 0.05 ? "" : (s.calib_k > 1 ? "#c0392b" : "#1e8449");
+    kEl.closest(".stat-card").classList.remove("hidden");
+  } else {
+    kEl.closest(".stat-card").classList.add("hidden");
+  }
 }
 
 function setText(id, val) { document.getElementById(id).textContent = val; }

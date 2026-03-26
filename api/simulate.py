@@ -3,7 +3,6 @@ import json
 import numpy as np
 import pandas as pd
 import yfinance as yf
-from scipy.stats import norm as _norm
 
 yf.set_tz_cache_location("/tmp")
 
@@ -197,10 +196,7 @@ class handler(BaseHTTPRequestHandler):
             current_price = float(close.iloc[-1])
             log_returns   = np.log(close / close.shift(1)).dropna().values
 
-            # ── 2. Walk-forward calibration (uses inner holdout) ──────────────
-            calib_k = _compute_calib_factor(close)
-
-            # ── 3. Simulate paths ─────────────────────────────────────────────
+            # ── 2. Simulate paths ─────────────────────────────────────────────
             np.random.seed(None)
             if _ARCH and len(log_returns) >= 100:
                 try:
@@ -213,11 +209,7 @@ class handler(BaseHTTPRequestHandler):
                 paths, model_info = _gbm_simulate(
                     log_returns, current_price, n_simulations, forecast_days)
 
-            # ── 4. Apply calibration ──────────────────────────────────────────
-            paths = _apply_calib(paths, calib_k)
-            model_info['calib_k'] = round(calib_k, 3)
-
-            # ── 5. Date index ─────────────────────────────────────────────────
+            # ── 4. Date index ─────────────────────────────────────────────────
             last_date    = hist.index[-1].to_pydatetime()
             future_dates = pd.bdate_range(start=last_date, periods=forecast_days + 1)
             dates        = [d.strftime("%Y-%m-%d") for d in future_dates]

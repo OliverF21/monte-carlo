@@ -15,18 +15,23 @@
 
   <style>
     :root {
-      --ink: #f7f8ff;
-      --muted: #959abf;
-      --panel: linear-gradient(180deg, rgba(16, 19, 42, 0.98) 0%, rgba(12, 14, 31, 0.98) 100%);
-      --panel-border: rgba(169, 195, 255, 0.12);
-      --soft-panel: rgba(255, 255, 255, 0.04);
-      --soft-border: rgba(157, 190, 255, 0.14);
+      --bg-top: #b5b7d0;
+      --bg-bottom: #a7aaca;
+      --panel: rgba(13, 16, 35, 0.92);
+      --panel-strong: rgba(10, 13, 29, 0.98);
+      --panel-soft: rgba(255, 255, 255, 0.04);
+      --panel-border: rgba(168, 193, 255, 0.12);
+      --text: #f5f7ff;
+      --muted: #96a0c8;
       --blue: #4d76ff;
-      --blue-2: #79d8ff;
-      --green: #4dd89a;
-      --red: #ff6d8d;
-      --shadow: 0 20px 50px rgba(12, 14, 31, 0.22);
-      --radius: 28px;
+      --cyan: #81ddff;
+      --green: #48d699;
+      --red: #ff6f91;
+      --amber: #ffbf66;
+      --shadow: 0 22px 50px rgba(12, 14, 31, 0.22);
+      --radius-xl: 28px;
+      --radius-lg: 22px;
+      --radius-md: 16px;
     }
 
     *, *::before, *::after {
@@ -38,11 +43,11 @@
     body {
       min-height: 100vh;
       font-family: "Plus Jakarta Sans", sans-serif;
-      color: var(--ink);
+      color: var(--text);
       background:
-        radial-gradient(circle at top left, rgba(130, 174, 255, 0.4), transparent 26%),
-        radial-gradient(circle at bottom right, rgba(90, 120, 255, 0.22), transparent 28%),
-        linear-gradient(180deg, #b7b8d0 0%, #a7aac8 100%);
+        radial-gradient(circle at top left, rgba(126, 176, 255, 0.34), transparent 24%),
+        radial-gradient(circle at bottom right, rgba(77, 118, 255, 0.18), transparent 28%),
+        linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
       overflow-x: hidden;
     }
 
@@ -50,314 +55,213 @@
     body::after {
       content: "";
       position: fixed;
-      border-radius: 999px;
+      border-radius: 50%;
       pointer-events: none;
       z-index: 0;
     }
 
     body::before {
-      width: 28rem;
-      height: 28rem;
+      width: 26rem;
+      height: 26rem;
       left: -10rem;
       top: 4rem;
-      background: radial-gradient(circle, rgba(118, 173, 255, 0.26), rgba(118, 173, 255, 0));
+      background: radial-gradient(circle, rgba(129, 221, 255, 0.24), rgba(129, 221, 255, 0));
     }
 
     body::after {
       width: 24rem;
       height: 24rem;
-      right: -8rem;
-      bottom: 2rem;
+      right: -7rem;
+      bottom: 4rem;
       background: radial-gradient(circle, rgba(77, 118, 255, 0.18), rgba(77, 118, 255, 0));
     }
 
     .page-shell {
       position: relative;
       z-index: 1;
-      max-width: 1460px;
+      max-width: 1240px;
       margin: 0 auto;
-      padding: 34px 24px 56px;
+      padding: 36px 22px 56px;
     }
 
-    .glass-panel,
-    .control-panel,
-    .summary-panel,
-    .chart-panel,
-    .code-panel,
-    .error-banner,
-    .loading-panel,
-    .metric-card,
-    .stats-grid .stat-card,
-    .performance-item {
-      background: var(--soft-panel);
-      border: 1px solid var(--soft-border);
-      backdrop-filter: blur(14px);
-    }
-
-    .dashboard-shell {
+    header {
       position: relative;
-      border-radius: 34px;
-      background: var(--panel);
+      overflow: hidden;
+      margin-bottom: 22px;
+      padding: 28px 30px;
+      border-radius: 32px;
+      background: linear-gradient(180deg, rgba(15, 18, 39, 0.96) 0%, rgba(10, 13, 29, 0.98) 100%);
       border: 1px solid var(--panel-border);
       box-shadow: var(--shadow);
-      overflow: hidden;
-      padding: 30px;
     }
 
-    .dashboard-shell::before {
+    header::before {
+      content: "";
+      position: absolute;
+      width: 340px;
+      height: 340px;
+      right: -110px;
+      top: -190px;
+      border-radius: 50%;
+      background: radial-gradient(circle at center, rgba(129, 221, 255, 0.34), rgba(77, 118, 255, 0));
+      pointer-events: none;
+    }
+
+    .header-kicker {
+      margin-bottom: 12px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.68);
+    }
+
+    header h1 {
+      font-family: "Space Grotesk", sans-serif;
+      font-size: clamp(2.2rem, 4vw, 3.6rem);
+      line-height: 0.95;
+      letter-spacing: -0.05em;
+      margin-bottom: 10px;
+      max-width: 12ch;
+    }
+
+    header p {
+      max-width: 62ch;
+      color: rgba(224, 229, 255, 0.78);
+      line-height: 1.6;
+      font-size: 0.98rem;
+    }
+
+    main {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .card {
+      position: relative;
+      overflow: hidden;
+      padding: 22px;
+      border-radius: var(--radius-xl);
+      background: linear-gradient(180deg, rgba(15, 18, 39, 0.95) 0%, rgba(11, 14, 31, 0.97) 100%);
+      border: 1px solid var(--panel-border);
+      box-shadow: var(--shadow);
+    }
+
+    .card::before {
       content: "";
       position: absolute;
       inset: 0;
       background:
-        radial-gradient(circle at top left, rgba(121, 216, 255, 0.18), transparent 22%),
-        radial-gradient(circle at 78% 18%, rgba(77, 118, 255, 0.18), transparent 22%);
+        radial-gradient(circle at top left, rgba(129, 221, 255, 0.12), transparent 22%),
+        radial-gradient(circle at 75% 22%, rgba(77, 118, 255, 0.12), transparent 24%);
       pointer-events: none;
     }
 
-    .dashboard-shell > * {
+    .card > * {
       position: relative;
       z-index: 1;
     }
 
-    .eyebrow {
-      margin-bottom: 12px;
-      letter-spacing: 0.28em;
-      text-transform: uppercase;
-      font-size: 0.72rem;
-      font-weight: 700;
-      color: rgba(255, 255, 255, 0.72);
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
     }
 
-    .hero-bar {
-      display: grid;
-      grid-template-columns: minmax(0, 1.35fr) minmax(280px, 360px);
-      gap: 20px;
-      align-items: stretch;
-      margin-bottom: 22px;
-    }
-
-    .hero-card,
-    .hero-metric {
-      border-radius: 28px;
-      padding: 24px 26px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .hero-card::before {
-      content: "";
-      position: absolute;
-      width: 320px;
-      height: 320px;
-      right: -100px;
-      top: -160px;
-      border-radius: 50%;
-      background:
-        radial-gradient(circle at center, rgba(121, 216, 255, 0.3), rgba(77, 118, 255, 0));
-    }
-
-    .hero-card h1,
-    .panel-title,
-    .hero-metric .big-value,
-    .metric-card .big-value,
-    .stat-value,
-    .performance-item .value,
-    .ring-label .big-value {
+    .section-head h2 {
       font-family: "Space Grotesk", sans-serif;
+      font-size: 1.28rem;
       letter-spacing: -0.04em;
     }
 
-    .hero-card h1 {
-      max-width: 12ch;
-      font-size: clamp(2.5rem, 5vw, 4.4rem);
-      line-height: 0.92;
-      margin-bottom: 14px;
-    }
-
-    .hero-card p {
-      max-width: 54ch;
-      color: rgba(223, 228, 255, 0.78);
-      line-height: 1.6;
-      font-size: 1rem;
-    }
-
-    .hero-actions {
-      margin-top: 20px;
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .cta-pill,
-    .ghost-pill,
-    .action-btn,
-    .copy-btn {
-      border: 0;
-      border-radius: 14px;
-      font-family: inherit;
-      font-weight: 700;
-      cursor: pointer;
-      transition: transform 0.16s ease, box-shadow 0.16s ease, opacity 0.16s ease;
-    }
-
-    .cta-pill:hover,
-    .ghost-pill:hover,
-    .action-btn:hover,
-    .copy-btn:hover {
-      transform: translateY(-1px);
-    }
-
-    .cta-pill {
-      padding: 13px 18px;
-      color: white;
-      background: linear-gradient(135deg, #7ddcff 0%, #4d76ff 100%);
-      box-shadow: 0 10px 24px rgba(77, 118, 255, 0.35);
-    }
-
-    .ghost-pill {
-      padding: 13px 18px;
-      color: #dce2ff;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(162, 187, 255, 0.14);
-    }
-
-    .hero-metric {
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      gap: 16px;
-    }
-
-    .metric-label,
-    .section-kicker,
-    .stat-label,
-    .input-group label {
-      font-size: 0.72rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.16em;
-      color: #c4c8e8;
-    }
-
-    .hero-metric .big-value {
-      font-size: clamp(2.4rem, 4vw, 3.2rem);
-      line-height: 0.95;
-    }
-
-    .support-text,
-    .title-stack p,
-    .section-head p,
-    .ring-label p,
-    .disclaimer,
-    .performance-item span {
+    .section-meta {
+      font-size: 0.84rem;
       color: var(--muted);
     }
 
-    .delta-chip,
-    .model-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      border-radius: 999px;
-      font-size: 0.78rem;
-      font-weight: 700;
-      white-space: nowrap;
-      background: rgba(77, 118, 255, 0.12);
-      border: 1px solid rgba(121, 216, 255, 0.18);
-      color: #d8ecff;
-    }
-
-    .dashboard-grid {
+    .input-grid {
       display: grid;
-      grid-template-columns: 340px minmax(0, 1fr) 330px;
-      gap: 20px;
-      align-items: start;
-    }
-
-    .left-rail,
-    .center-stage,
-    .right-rail {
-      display: grid;
-      gap: 18px;
-    }
-
-    .control-panel,
-    .summary-panel,
-    .chart-panel,
-    .code-panel,
-    .loading-panel,
-    .metric-card {
-      border-radius: 24px;
-      padding: 18px;
-    }
-
-    .panel-title {
-      font-size: 1.4rem;
-      margin-bottom: 6px;
-    }
-
-    .title-stack {
-      margin-bottom: 18px;
-    }
-
-    .control-grid {
-      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 14px;
-      margin-bottom: 16px;
+      margin-bottom: 18px;
     }
 
     .input-group label {
       display: block;
       margin-bottom: 8px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #c4c9ea;
     }
 
     .input-group input[type="text"],
     .input-group select {
       width: 100%;
       padding: 13px 14px;
-      border: 1px solid rgba(162, 187, 255, 0.12);
       border-radius: 14px;
+      border: 1px solid rgba(162, 187, 255, 0.12);
       background: rgba(255, 255, 255, 0.05);
-      color: var(--ink);
+      color: var(--text);
       font: inherit;
-      outline: none;
       appearance: none;
+      outline: none;
     }
 
     .input-group input[type="text"]::placeholder {
-      color: rgba(223, 228, 255, 0.44);
+      color: rgba(223, 228, 255, 0.42);
     }
 
     .input-group input[type="text"]:focus,
     .input-group select:focus {
-      border-color: rgba(121, 216, 255, 0.45);
-      box-shadow: 0 0 0 4px rgba(121, 216, 255, 0.08);
+      border-color: rgba(129, 221, 255, 0.45);
+      box-shadow: 0 0 0 4px rgba(129, 221, 255, 0.08);
     }
 
     #ticker {
       text-transform: uppercase;
-      letter-spacing: 0.14em;
+      letter-spacing: 0.12em;
       font-weight: 700;
     }
 
-    .slider-block {
-      padding: 14px;
+    .slider-group {
+      grid-column: span 2;
+      padding: 14px 16px;
       border-radius: 16px;
       background: rgba(255, 255, 255, 0.03);
       border: 1px solid rgba(162, 187, 255, 0.08);
+    }
+
+    .slider-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .slider-top span {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #c4c9ea;
     }
 
     .slider-row {
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-top: 8px;
     }
 
     .slider-row input[type="range"] {
       flex: 1;
-      accent-color: #6cd3ff;
+      accent-color: var(--cyan);
     }
 
     .slider-val {
@@ -367,108 +271,102 @@
       font-size: 1.1rem;
     }
 
-    .action-stack {
-      display: grid;
-      gap: 10px;
+    .btn-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
     }
 
-    .action-btn {
-      width: 100%;
-      padding: 14px 16px;
+    .btn {
+      padding: 13px 18px;
+      border: 0;
+      border-radius: 14px;
+      font: inherit;
+      font-weight: 700;
       color: white;
-      font-size: 0.95rem;
+      cursor: pointer;
+      transition: transform 0.16s ease, opacity 0.16s ease, box-shadow 0.16s ease;
     }
 
-    .action-btn.primary {
-      background: linear-gradient(135deg, #7ddcff 0%, #4d76ff 100%);
-      box-shadow: 0 14px 26px rgba(77, 118, 255, 0.28);
+    .btn:hover:not(:disabled) {
+      transform: translateY(-1px);
     }
 
-    .action-btn.secondary {
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(162, 187, 255, 0.12);
-      color: #e7ebff;
-      box-shadow: none;
-    }
-
-    .action-btn:disabled,
-    .copy-btn:disabled {
+    .btn:disabled {
       opacity: 0.42;
       cursor: not-allowed;
       transform: none;
     }
 
-    .test-row {
-      display: grid;
-      grid-template-columns: 1fr 126px;
-      gap: 10px;
+    .btn-primary {
+      background: linear-gradient(135deg, var(--cyan) 0%, var(--blue) 100%);
+      box-shadow: 0 14px 26px rgba(77, 118, 255, 0.28);
     }
 
-    .performance-list {
-      display: grid;
-      gap: 10px;
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(162, 187, 255, 0.12);
+      color: #e8ecff;
     }
 
-    .performance-item {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 12px;
-      padding: 14px 16px;
-      border-radius: 18px;
-      align-items: center;
+    .inline-select {
+      min-width: 130px;
+      padding: 13px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(162, 187, 255, 0.12);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text);
+      font: inherit;
+      outline: none;
     }
 
-    .performance-item strong {
-      display: block;
-      font-size: 0.88rem;
-      margin-bottom: 3px;
+    .hidden {
+      display: none !important;
     }
 
-    .performance-item .value {
-      font-size: 1.2rem;
-      color: white;
+    #error-msg {
+      padding: 13px 15px;
+      border-radius: var(--radius-md);
+      background: rgba(255, 111, 145, 0.1);
+      border: 1px solid rgba(255, 111, 145, 0.18);
+      color: #ffd8e3;
+      font-size: 0.9rem;
     }
 
-    .metric-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 14px;
-    }
-
-    .metric-card .big-value {
-      margin-top: 12px;
-      font-size: 2rem;
-      line-height: 1;
-    }
-
-    .section-head {
-      display: flex;
-      align-items: end;
-      justify-content: space-between;
-      gap: 16px;
-      margin-bottom: 14px;
-      flex-wrap: wrap;
-    }
-
-    .section-kicker {
-      margin-bottom: 6px;
-    }
-
-    .chart-panel {
-      padding: 20px;
-    }
-
-    .chart-heading,
-    .mini-heading {
+    .loading-wrap {
       display: flex;
       align-items: center;
-      justify-content: space-between;
       gap: 12px;
-      flex-wrap: wrap;
+      color: var(--muted);
     }
 
-    .chart-heading {
-      margin-bottom: 14px;
+    .spinner {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 3px solid rgba(255, 255, 255, 0.15);
+      border-top-color: var(--cyan);
+      animation: spin 0.85s linear infinite;
+      flex: 0 0 auto;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .model-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(77, 118, 255, 0.12);
+      border: 1px solid rgba(129, 221, 255, 0.18);
+      color: #d8ecff;
+      font-size: 0.74rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
     }
 
     #chart,
@@ -481,110 +379,51 @@
 
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px;
-      margin-top: 14px;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
     }
 
-    .stats-grid .stat-card {
+    .stat-card {
+      padding: 15px 16px;
       border-radius: 18px;
-      padding: 14px 15px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(162, 187, 255, 0.1);
     }
 
     .stat-label {
       margin-bottom: 8px;
+      font-size: 0.69rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #99a2cb;
     }
 
     .stat-value {
-      font-size: 1.12rem;
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 1.16rem;
       line-height: 1.1;
       color: white;
     }
 
-    .ring-wrap {
-      position: relative;
-      width: 220px;
-      height: 220px;
-      margin: 4px auto 18px;
-      display: grid;
-      place-items: center;
-    }
+    .coverage-good { color: var(--green) !important; }
+    .coverage-bad { color: var(--red) !important; }
+    .up { color: var(--green) !important; }
+    .down { color: var(--red) !important; }
 
-    .ring {
-      position: absolute;
-      inset: 0;
-      border-radius: 50%;
-      background:
-        radial-gradient(circle at center, rgba(17, 20, 41, 1) 57%, transparent 58%),
-        conic-gradient(from 210deg, #8fe7ff 0deg, #4d76ff 220deg, rgba(255, 255, 255, 0.08) 220deg 360deg);
-      box-shadow: inset 0 0 0 1px rgba(162, 187, 255, 0.12);
-    }
-
-    .ring::after {
-      content: "";
-      position: absolute;
-      width: 20px;
-      height: 20px;
-      left: 18px;
-      bottom: 46px;
-      border-radius: 50%;
-      background: white;
-      box-shadow: 0 0 0 6px rgba(121, 216, 255, 0.1);
-    }
-
-    .ring-label {
-      position: relative;
-      z-index: 1;
-      text-align: center;
-    }
-
-    .ring-label .big-value {
-      font-size: 2.6rem;
-      line-height: 1;
-      margin-bottom: 6px;
-    }
-
-    .ring-label p {
-      max-width: 13ch;
-      margin: 0 auto;
-      font-size: 0.82rem;
-      line-height: 1.4;
-    }
-
-    .error-banner {
-      margin-bottom: 12px;
-      padding: 13px 15px;
-      border-radius: 16px;
-      color: #ffd9e2;
-      font-size: 0.86rem;
-    }
-
-    .loading-panel {
-      margin-bottom: 12px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .spinner {
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      border: 3px solid rgba(255, 255, 255, 0.15);
-      border-top-color: #8fe7ff;
-      animation: spin 0.85s linear infinite;
-      flex: 0 0 auto;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+    .disclaimer {
+      margin-top: 16px;
+      font-size: 0.8rem;
+      line-height: 1.55;
+      color: var(--muted);
     }
 
     .code-toggle-btn {
       width: 100%;
       display: flex;
-      align-items: center;
       justify-content: space-between;
+      align-items: center;
       gap: 10px;
       padding: 14px 16px;
       border-radius: 16px;
@@ -606,12 +445,16 @@
 
     .code-panel {
       margin-top: 12px;
+      padding: 16px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(162, 187, 255, 0.1);
     }
 
     .code-header {
       display: flex;
-      align-items: center;
       justify-content: space-between;
+      align-items: center;
       gap: 10px;
       margin-bottom: 10px;
       color: #dce1ff;
@@ -621,8 +464,13 @@
 
     .copy-btn {
       padding: 9px 12px;
+      border: 0;
+      border-radius: 12px;
       color: white;
-      background: linear-gradient(135deg, #7ddcff 0%, #4d76ff 100%);
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      background: linear-gradient(135deg, var(--cyan) 0%, var(--blue) 100%);
     }
 
     .copy-btn.copied {
@@ -630,7 +478,7 @@
     }
 
     .code-panel pre {
-      max-height: 320px;
+      max-height: 360px;
       overflow: auto;
       border-radius: 16px;
       border: 1px solid rgba(162, 187, 255, 0.08);
@@ -641,319 +489,225 @@
       line-height: 1.55;
     }
 
-    .disclaimer {
-      font-size: 0.8rem;
-      line-height: 1.55;
-      margin-top: 14px;
-    }
-
-    .up { color: var(--green) !important; }
-    .down { color: var(--red) !important; }
-    .hidden { display: none !important; }
-    .coverage-good { color: var(--green) !important; }
-    .coverage-bad { color: var(--red) !important; }
-
-    @media (max-width: 1240px) {
-      .dashboard-grid {
-        grid-template-columns: 320px minmax(0, 1fr);
+    @media (max-width: 1080px) {
+      .input-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
-      .right-rail {
-        grid-column: 1 / -1;
+      .slider-group {
+        grid-column: span 2;
+      }
+
+      .stats-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
     }
 
-    @media (max-width: 980px) {
-      .page-shell {
-        padding-inline: 16px;
-      }
-
-      .hero-bar,
-      .dashboard-grid,
-      .right-rail,
-      .metric-grid,
-      .stats-grid {
-        grid-template-columns: 1fr;
-      }
-
-      #chart,
-      #backtest-chart {
-        height: 340px;
-      }
-    }
-
     @media (max-width: 640px) {
-      .dashboard-shell {
+      .page-shell {
+        padding: 18px 14px 34px;
+      }
+
+      header,
+      .card {
         padding: 18px;
         border-radius: 24px;
       }
 
-      .hero-card,
-      .hero-metric,
-      .control-panel,
-      .summary-panel,
-      .chart-panel,
-      .code-panel,
-      .metric-card {
-        padding: 16px;
-        border-radius: 20px;
-      }
-
-      .hero-card h1 {
-        font-size: 2.6rem;
-      }
-
-      .test-row {
+      .input-grid,
+      .stats-grid {
         grid-template-columns: 1fr;
       }
 
-      .ring-wrap {
-        width: 184px;
-        height: 184px;
+      .slider-group {
+        grid-column: auto;
+      }
+
+      .btn-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .inline-select {
+        width: 100%;
       }
 
       #chart,
       #backtest-chart {
-        height: 280px;
+        height: 320px;
       }
     }
   </style>
 </head>
 <body>
   <div class="page-shell">
-    <main class="dashboard-shell">
-      <div class="eyebrow">Monte Carlo Forecast Studio</div>
+    <header>
+      <div class="header-kicker">Monte Carlo Forecast Studio</div>
+      <h1>Monte Carlo Stock Simulator</h1>
+      <p>GARCH(1,1) plus Student-t forecasting with a cleaner desktop presentation, while keeping the original workflow and information architecture intact.</p>
+    </header>
 
-      <section class="hero-bar">
-        <div class="glass-panel hero-card">
-          <h1>Desktop-first stock scenario analysis</h1>
-          <p>Run Monte Carlo forecasts with a wider chart stage, faster parameter editing, and side-by-side metrics that make sense on a real screen.</p>
-          <div class="hero-actions">
-            <button class="cta-pill" onclick="document.getElementById('ticker').focus()">Start Forecasting</button>
-            <button class="ghost-pill" onclick="document.getElementById('backtest-btn').focus()">Jump to Backtest</button>
+    <main>
+      <div class="card">
+        <div class="section-head">
+          <h2>Simulation Controls</h2>
+          <span class="section-meta">Configure the ticker, lookback window, and forecast horizon.</span>
+        </div>
+
+        <div class="input-grid">
+          <div class="input-group">
+            <label for="ticker">Stock Ticker</label>
+            <input type="text" id="ticker" value="AAPL" placeholder="AAPL, TSLA, MSFT" oninput="this.value=this.value.toUpperCase()" />
+          </div>
+
+          <div class="input-group">
+            <label for="lookback">Historical Lookback</label>
+            <select id="lookback">
+              <option value="6mo">6 Months</option>
+              <option value="1y">1 Year</option>
+              <option value="2y" selected>2 Years</option>
+              <option value="5y">5 Years</option>
+              <option value="10y">10 Years</option>
+            </select>
+          </div>
+
+          <div class="input-group">
+            <label for="forecast_days">Forecast Horizon</label>
+            <select id="forecast_days">
+              <option value="30">30 Days</option>
+              <option value="90">90 Days</option>
+              <option value="180">6 Months</option>
+              <option value="252" selected>1 Year (252 days)</option>
+              <option value="504">2 Years (504 days)</option>
+            </select>
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-top">
+              <label style="margin:0;">Simulations</label>
+              <span id="sim-display">500</span>
+            </div>
+            <div class="slider-row">
+              <input type="range" id="simulations" min="100" max="1000" step="100" value="500" oninput="document.getElementById('sim-display').textContent=this.value" />
+              <span class="slider-val" id="sim-val">500</span>
+            </div>
           </div>
         </div>
 
-        <div class="glass-panel hero-metric">
-          <div>
-            <div class="metric-label">Live Spot</div>
-            <div class="big-value" id="hero-price">$0</div>
-          </div>
-          <div class="delta-chip" id="hero-delta">Awaiting run</div>
-          <div class="support-text">Run a simulation to populate the scenario dashboard and exportable path data.</div>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="run-btn" onclick="runSimulation()">Run Simulation</button>
+          <button class="btn btn-secondary" id="backtest-btn" onclick="runBacktest()">Run Backtest</button>
+          <select id="test_days" class="inline-select">
+            <option value="63">3 months</option>
+            <option value="126">6 months</option>
+            <option value="252" selected>1 year</option>
+            <option value="504">2 years</option>
+          </select>
+          <button class="btn btn-secondary" id="csv-btn" onclick="downloadCSV()" disabled>Download CSV</button>
         </div>
-      </section>
+      </div>
 
-      <section class="dashboard-grid">
-        <aside class="left-rail">
-          <div class="control-panel">
-            <div class="title-stack">
-              <h2 class="panel-title">Build your forecast</h2>
-              <p>Configure ticker history, scenario horizon, and simulation depth.</p>
-            </div>
+      <div id="error-msg" class="hidden"></div>
 
-            <div class="control-grid">
-              <div class="input-group">
-                <label for="ticker">Stock Ticker</label>
-                <input type="text" id="ticker" value="AAPL" placeholder="AAPL, TSLA, MSFT" oninput="this.value=this.value.toUpperCase()" />
-              </div>
+      <div class="card hidden" id="loading-card">
+        <div class="loading-wrap">
+          <div class="spinner"></div>
+          <span>Fetching data and running the model...</span>
+        </div>
+      </div>
 
-              <div class="input-group">
-                <label for="lookback">Historical Lookback</label>
-                <select id="lookback">
-                  <option value="6mo">6 Months</option>
-                  <option value="1y">1 Year</option>
-                  <option value="2y" selected>2 Years</option>
-                  <option value="5y">5 Years</option>
-                  <option value="10y">10 Years</option>
-                </select>
-              </div>
-
-              <div class="input-group">
-                <label for="forecast_days">Forecast Horizon</label>
-                <select id="forecast_days">
-                  <option value="30">30 Days</option>
-                  <option value="90">90 Days</option>
-                  <option value="180">6 Months</option>
-                  <option value="252" selected>1 Year (252 days)</option>
-                  <option value="504">2 Years (504 days)</option>
-                </select>
-              </div>
-
-              <div class="slider-block">
-                <label>Simulations <span id="sim-display">500</span></label>
-                <div class="slider-row">
-                  <input type="range" id="simulations" min="100" max="1000" step="100" value="500" oninput="document.getElementById('sim-display').textContent=this.value" />
-                  <span class="slider-val" id="sim-val">500</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="action-stack">
-              <button class="action-btn primary" id="run-btn" onclick="runSimulation()">Run Simulation</button>
-              <div class="test-row">
-                <button class="action-btn secondary" id="backtest-btn" onclick="runBacktest()">Run Backtest</button>
-                <select id="test_days">
-                  <option value="63">3 months</option>
-                  <option value="126">6 months</option>
-                  <option value="252" selected>1 year</option>
-                  <option value="504">2 years</option>
-                </select>
-              </div>
-              <button class="action-btn secondary" id="csv-btn" onclick="downloadCSV()" disabled>Download CSV</button>
-            </div>
-          </div>
-
-          <div class="performance-list">
-            <div class="performance-item">
-              <div>
-                <strong>Median forecast</strong>
-                <span id="quick-summary">Run a simulation to populate the dashboard.</span>
-              </div>
-              <div class="value" id="quick-median">$0</div>
-            </div>
-            <div class="performance-item">
-              <div>
-                <strong>Volatility</strong>
-                <span>Annualized estimate from the fitted model.</span>
-              </div>
-              <div class="value" id="quick-vol">0%</div>
-            </div>
-            <div class="performance-item">
-              <div>
-                <strong>1-day VaR</strong>
-                <span>Stress check on short-term downside.</span>
-              </div>
-              <div class="value" id="quick-var">0%</div>
-            </div>
-          </div>
-        </aside>
-
-        <section class="center-stage">
-          <div class="section-head">
-            <div>
-              <div class="section-kicker">Scenario Dashboard</div>
-              <h3 class="panel-title" id="chart-title">Forecast dashboard</h3>
-              <p id="chart-subtitle">Run a simulation to view percentile bands and scenarios.</p>
-            </div>
+      <div class="card hidden" id="results-card">
+        <div class="section-head">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <h2 id="chart-title">Forecast</h2>
             <span id="model-badge" class="model-badge">Idle</span>
           </div>
+          <span id="chart-subtitle" class="section-meta">Run a simulation to view percentile bands and scenarios.</span>
+        </div>
 
-          <div id="error-msg" class="error-banner hidden"></div>
+        <div id="chart"></div>
 
-          <div id="loading-card" class="loading-panel hidden">
-            <div class="spinner"></div>
-            <div class="support-text">Fetching market history and generating simulation paths...</div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Current Price</div>
+            <div class="stat-value" id="stat-current">-</div>
           </div>
-
-          <div class="chart-panel">
-            <div class="chart-heading">
-              <div>
-                <h3>Scenario fan</h3>
-                <div class="support-text">Median path plus bull and bear percentile bands.</div>
-              </div>
-            </div>
-            <div id="chart"></div>
+          <div class="stat-card">
+            <div class="stat-label">Median Forecast</div>
+            <div class="stat-value" id="stat-median">-</div>
           </div>
-
-          <div id="backtest-card" class="summary-panel hidden">
-            <div class="chart-heading">
-              <div>
-                <h3 id="bt-title">Backtest</h3>
-                <div class="support-text" id="bt-meta">Coverage diagnostics will appear here after a run.</div>
-              </div>
-              <span id="bt-model-badge" class="model-badge">Idle</span>
-            </div>
-
-            <div id="backtest-chart"></div>
-
-            <div class="mini-heading" style="margin-top:16px;">
-              <h3>Calibration review</h3>
-              <span class="support-text">Coverage quality across historical holdout data.</span>
-            </div>
-
-            <div class="stats-grid">
-              <div class="stat-card">
-                <div class="stat-label">90% Band</div>
-                <div class="stat-value" id="bt-cov90">-</div>
-              </div>
-              <div class="stat-card">
-                <div class="stat-label">50% Band</div>
-                <div class="stat-value" id="bt-cov50">-</div>
-              </div>
-              <div class="stat-card">
-                <div class="stat-label">Assessment</div>
-                <div class="stat-value" id="bt-calibration">-</div>
-              </div>
-            </div>
+          <div class="stat-card">
+            <div class="stat-label">Bear (5th pct)</div>
+            <div class="stat-value" id="stat-p5">-</div>
           </div>
-        </section>
-
-        <aside class="right-rail">
-          <div id="results-card" class="summary-panel hidden">
-            <div class="ring-wrap">
-              <div class="ring"></div>
-              <div class="ring-label">
-                <div class="big-value" id="stat-prob">0%</div>
-                <p>Probability the forecast ends above spot price</p>
-              </div>
-            </div>
-
-            <div class="metric-grid">
-              <div class="metric-card">
-                <div class="stat-label">Current Price</div>
-                <div class="big-value" id="stat-current">-</div>
-              </div>
-              <div class="metric-card">
-                <div class="stat-label">Median Forecast</div>
-                <div class="big-value" id="stat-median">-</div>
-              </div>
-            </div>
-
-            <div class="stats-grid">
-              <div class="stat-card">
-                <div class="stat-label">Bear Case</div>
-                <div class="stat-value" id="stat-p5">-</div>
-              </div>
-              <div class="stat-card">
-                <div class="stat-label">Bull Case</div>
-                <div class="stat-value" id="stat-p95">-</div>
-              </div>
-              <div class="stat-card">
-                <div class="stat-label">Annual Volatility</div>
-                <div class="stat-value" id="stat-vol">-</div>
-              </div>
-              <div class="stat-card">
-                <div class="stat-label">Calibration</div>
-                <div class="stat-value" id="stat-calib">-</div>
-              </div>
-            </div>
-
-            <p class="disclaimer">Simulation uses GARCH(1,1) with Student-t innovations when enough data exists, otherwise a GBM fallback. Educational use only, not investment advice.</p>
+          <div class="stat-card">
+            <div class="stat-label">Bull (95th pct)</div>
+            <div class="stat-value" id="stat-p95">-</div>
           </div>
-
-          <div class="summary-panel">
-            <div class="mini-heading">
-              <h3>Source</h3>
-              <span class="support-text">Keep the Python logic close at hand.</span>
-            </div>
-
-            <button class="code-toggle-btn" id="code-toggle-btn" onclick="toggleCode()">
-              <span>View Python Code</span>
-              <span class="chevron">⌄</span>
-            </button>
-
-            <div class="code-panel hidden" id="code-panel">
-              <div class="code-header">
-                <span>api/simulate.py</span>
-                <button class="copy-btn" id="copy-btn" onclick="copyCode()">Copy</button>
-              </div>
-              <pre><code class="language-python" id="code-content"></code></pre>
-            </div>
+          <div class="stat-card">
+            <div class="stat-label">Prob. of Gain</div>
+            <div class="stat-value" id="stat-prob">-</div>
           </div>
-        </aside>
-      </section>
+          <div class="stat-card">
+            <div class="stat-label">Annual Volatility</div>
+            <div class="stat-value" id="stat-vol">-</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">1-Day 95% VaR</div>
+            <div class="stat-value" id="stat-var">-</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Calibration</div>
+            <div class="stat-value" id="stat-calib">-</div>
+          </div>
+        </div>
+
+        <p class="disclaimer">Simulation uses GARCH(1,1) with Student-t innovations when enough data exists and falls back to GBM when it does not. Educational use only, not investment advice.</p>
+      </div>
+
+      <div class="card hidden" id="backtest-card">
+        <div class="section-head">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <h2 id="bt-title">Backtest</h2>
+            <span id="bt-model-badge" class="model-badge">Idle</span>
+          </div>
+          <span id="bt-meta" class="section-meta">Coverage diagnostics will appear here after a run.</span>
+        </div>
+
+        <div id="backtest-chart"></div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">90% Band Coverage</div>
+            <div class="stat-value" id="bt-cov90">-</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">50% Band Coverage</div>
+            <div class="stat-value" id="bt-cov50">-</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Calibration</div>
+            <div class="stat-value" id="bt-calibration">-</div>
+          </div>
+        </div>
+
+        <p class="disclaimer">A well-calibrated model should land close to each target coverage band. Under-coverage means your forecast range is too narrow; over-coverage means it is too wide.</p>
+      </div>
+
+      <div class="card">
+        <button class="code-toggle-btn" id="code-toggle-btn" onclick="toggleCode()">
+          <span>View Python Code</span>
+          <span class="chevron">⌄</span>
+        </button>
+
+        <div class="code-panel hidden" id="code-panel">
+          <div class="code-header">
+            <span>api/simulate.py</span>
+            <button class="copy-btn" id="copy-btn" onclick="copyCode()">Copy</button>
+          </div>
+          <pre><code class="language-python" id="code-content"></code></pre>
+        </div>
+      </div>
     </main>
   </div>
 
@@ -1038,7 +792,7 @@
         name: "Bear",
         type: "scatter",
         mode: "lines",
-        line: { color: "#ff6d8d", dash: "dot", width: 2 },
+        line: { color: "#ff6f91", dash: "dot", width: 2 },
         hovertemplate: "<b>5th pct</b>: $%{y:.2f}<extra></extra>",
       });
 
@@ -1048,9 +802,9 @@
         name: "Bull",
         type: "scatter",
         mode: "lines",
-        line: { color: "#79d8ff", dash: "dot", width: 2 },
+        line: { color: "#81ddff", dash: "dot", width: 2 },
         fill: "tonexty",
-        fillcolor: "rgba(121, 216, 255, 0.08)",
+        fillcolor: "rgba(129, 221, 255, 0.08)",
         hovertemplate: "<b>95th pct</b>: $%{y:.2f}<extra></extra>",
       });
 
@@ -1068,11 +822,11 @@
       const lookbackLabel = document.getElementById("lookback").selectedOptions[0].text;
       const fittedDays = lookbackToDays(document.getElementById("lookback").value);
 
-      document.getElementById("chart-title").textContent = `${ticker} scenario dashboard`;
+      document.getElementById("chart-title").textContent = `${ticker} Forecast`;
       document.getElementById("chart-subtitle").textContent = `${lookbackLabel} lookback, ${forecastLabel} forecast, calibrated over about ${fittedDays} trading days.`;
 
       const layout = {
-        margin: { t: 18, r: 14, b: 36, l: 44 },
+        margin: { t: 20, r: 18, b: 48, l: 56 },
         paper_bgcolor: "rgba(0,0,0,0)",
         plot_bgcolor: "rgba(255,255,255,0.02)",
         hovermode: "x unified",
@@ -1092,7 +846,7 @@
         },
         legend: {
           orientation: "h",
-          y: -0.2,
+          y: -0.16,
           x: 0.5,
           xanchor: "center",
           font: { size: 10, color: "#c9d4ff" },
@@ -1103,7 +857,7 @@
           x1: dates[dates.length - 1],
           y0: current_price,
           y1: current_price,
-          line: { color: "rgba(255,255,255,0.35)", dash: "dash", width: 1.2 },
+          line: { color: "rgba(255,191,102,0.9)", dash: "dash", width: 1.3 },
         }],
         annotations: [{
           x: dates[Math.min(4, dates.length - 1)],
@@ -1111,7 +865,7 @@
           text: `Spot $${current_price.toFixed(2)}`,
           showarrow: false,
           yshift: 12,
-          font: { size: 10, color: "#dce4ff" },
+          font: { size: 10, color: "#ffd59a" },
         }],
       };
 
@@ -1130,6 +884,7 @@
       setText("stat-p95", `$${s.p95_final.toFixed(2)}`);
       setText("stat-prob", `${(s.prob_gain * 100).toFixed(1)}%`);
       setText("stat-vol", `${(s.annual_vol * 100).toFixed(1)}%`);
+      setText("stat-var", `${(s.var_95_1day * 100).toFixed(2)}%`);
 
       const calibEl = document.getElementById("stat-calib");
       if (s.calib_k != null) {
@@ -1139,17 +894,6 @@
         calibEl.textContent = "1.00x";
         calibEl.className = "stat-value";
       }
-
-      setText("hero-price", `$${cp.toFixed(2)}`);
-      setText("quick-median", `$${s.median_final.toFixed(2)}`);
-      setText("quick-vol", `${(s.annual_vol * 100).toFixed(1)}%`);
-      setText("quick-var", `${(s.var_95_1day * 100).toFixed(2)}%`);
-      document.getElementById("quick-summary").textContent = `${data.ticker} median path over ${document.getElementById("forecast_days").selectedOptions[0].text.toLowerCase()}.`;
-
-      const heroDelta = document.getElementById("hero-delta");
-      const pctChange = ((s.median_final / cp) - 1) * 100;
-      heroDelta.textContent = `${pctChange >= 0 ? "+" : ""}${pctChange.toFixed(1)}% median drift`;
-      heroDelta.className = `delta-chip ${pctChange >= 0 ? "up" : "down"}`;
     }
 
     function setText(id, val) {
@@ -1201,28 +945,28 @@
       const { ticker, model, dates, actual, percentile_5, percentile_25, percentile_50, percentile_75, percentile_95, coverage } = data;
 
       const traces = [
-        { x: dates, y: percentile_5, type: "scatter", mode: "lines", line: { color: "rgba(255,109,141,0.22)", width: 1 }, showlegend: false, hoverinfo: "skip" },
-        { x: dates, y: percentile_95, name: "90% Band", type: "scatter", mode: "lines", line: { color: "rgba(255,109,141,0.24)", width: 1 }, fill: "tonexty", fillcolor: "rgba(255,109,141,0.08)", hoverinfo: "skip" },
-        { x: dates, y: percentile_25, type: "scatter", mode: "lines", line: { color: "rgba(121,216,255,0.22)", width: 1 }, showlegend: false, hoverinfo: "skip" },
-        { x: dates, y: percentile_75, name: "50% Band", type: "scatter", mode: "lines", line: { color: "rgba(121,216,255,0.22)", width: 1 }, fill: "tonexty", fillcolor: "rgba(121,216,255,0.1)", hoverinfo: "skip" },
+        { x: dates, y: percentile_5, type: "scatter", mode: "lines", line: { color: "rgba(255,111,145,0.22)", width: 1 }, showlegend: false, hoverinfo: "skip" },
+        { x: dates, y: percentile_95, name: "90% Band", type: "scatter", mode: "lines", line: { color: "rgba(255,111,145,0.24)", width: 1 }, fill: "tonexty", fillcolor: "rgba(255,111,145,0.08)", hoverinfo: "skip" },
+        { x: dates, y: percentile_25, type: "scatter", mode: "lines", line: { color: "rgba(129,221,255,0.22)", width: 1 }, showlegend: false, hoverinfo: "skip" },
+        { x: dates, y: percentile_75, name: "50% Band", type: "scatter", mode: "lines", line: { color: "rgba(129,221,255,0.22)", width: 1 }, fill: "tonexty", fillcolor: "rgba(129,221,255,0.1)", hoverinfo: "skip" },
         { x: dates, y: percentile_50, name: "Median", type: "scatter", mode: "lines", line: { color: "#4d76ff", dash: "dash", width: 2.4 }, hovertemplate: "<b>Median</b>: $%{y:.2f}<extra></extra>" },
         { x: dates, y: actual, name: "Actual", type: "scatter", mode: "lines", line: { color: "#ffffff", width: 2.5 }, hovertemplate: "<b>Actual</b>: $%{y:.2f}<extra></extra>" },
       ];
 
       const layout = {
-        margin: { t: 18, r: 14, b: 36, l: 44 },
+        margin: { t: 20, r: 18, b: 48, l: 56 },
         paper_bgcolor: "rgba(0,0,0,0)",
         plot_bgcolor: "rgba(255,255,255,0.02)",
         hovermode: "x unified",
         font: { color: "#dfe4ff", family: "Plus Jakarta Sans, sans-serif" },
         xaxis: { showgrid: true, gridcolor: "rgba(160, 183, 255, 0.08)", tickfont: { size: 10, color: "#96a2d8" }, zeroline: false },
         yaxis: { showgrid: true, gridcolor: "rgba(160, 183, 255, 0.08)", tickfont: { size: 10, color: "#96a2d8" }, tickprefix: "$", zeroline: false },
-        legend: { orientation: "h", y: -0.22, x: 0.5, xanchor: "center", font: { size: 10, color: "#c9d4ff" } },
+        legend: { orientation: "h", y: -0.16, x: 0.5, xanchor: "center", font: { size: 10, color: "#c9d4ff" } },
       };
 
       Plotly.newPlot("backtest-chart", traces, layout, { responsive: true, displayModeBar: false });
 
-      document.getElementById("bt-title").textContent = `${ticker} backtest`;
+      document.getElementById("bt-title").textContent = `${ticker} Backtest`;
       document.getElementById("bt-model-badge").textContent = model;
       document.getElementById("bt-meta").textContent = `Test window ${document.getElementById("test_days").selectedOptions[0].text}, calibration factor ${data.calib_k?.toFixed(2) ?? "1.00"}x.`;
 

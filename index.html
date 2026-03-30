@@ -15,7 +15,6 @@
 
   <style>
     :root {
-      --bg: #aeb0cc;
       --ink: #f7f8ff;
       --muted: #959abf;
       --panel: linear-gradient(180deg, rgba(16, 19, 42, 0.98) 0%, rgba(12, 14, 31, 0.98) 100%);
@@ -75,129 +74,118 @@
     .page-shell {
       position: relative;
       z-index: 1;
-      max-width: 1260px;
+      max-width: 1460px;
       margin: 0 auto;
-      padding: 40px 22px 56px;
+      padding: 34px 24px 56px;
     }
 
-    .eyebrow {
-      margin-bottom: 18px;
-      text-align: center;
-      letter-spacing: 0.32em;
-      text-transform: uppercase;
-      font-size: 0.72rem;
-      font-weight: 700;
-      color: rgba(255, 255, 255, 0.7);
+    .glass-panel,
+    .control-panel,
+    .summary-panel,
+    .chart-panel,
+    .code-panel,
+    .error-banner,
+    .loading-panel,
+    .metric-card,
+    .stats-grid .stat-card,
+    .performance-item {
+      background: var(--soft-panel);
+      border: 1px solid var(--soft-border);
+      backdrop-filter: blur(14px);
     }
 
-    .phone-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 22px;
-      align-items: start;
-    }
-
-    .phone-card {
+    .dashboard-shell {
       position: relative;
-      min-height: 760px;
-      padding: 22px 18px 20px;
-      border-radius: var(--radius);
+      border-radius: 34px;
       background: var(--panel);
       border: 1px solid var(--panel-border);
       box-shadow: var(--shadow);
       overflow: hidden;
+      padding: 30px;
     }
 
-    .phone-card::before {
+    .dashboard-shell::before {
       content: "";
       position: absolute;
       inset: 0;
       background:
-        radial-gradient(circle at top left, rgba(121, 216, 255, 0.18), transparent 26%),
-        radial-gradient(circle at 75% 30%, rgba(77, 118, 255, 0.18), transparent 28%);
+        radial-gradient(circle at top left, rgba(121, 216, 255, 0.18), transparent 22%),
+        radial-gradient(circle at 78% 18%, rgba(77, 118, 255, 0.18), transparent 22%);
       pointer-events: none;
     }
 
-    .phone-card > * {
+    .dashboard-shell > * {
       position: relative;
       z-index: 1;
     }
 
-    .hero-screen {
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-      padding: 24px 18px 26px;
+    .eyebrow {
+      margin-bottom: 12px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.72);
     }
 
-    .hero-screen::before,
-    .hero-screen::after {
+    .hero-bar {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(280px, 360px);
+      gap: 20px;
+      align-items: stretch;
+      margin-bottom: 22px;
+    }
+
+    .hero-card,
+    .hero-metric {
+      border-radius: 28px;
+      padding: 24px 26px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-card::before {
       content: "";
       position: absolute;
-      border-radius: 999px;
-      border: 36px solid transparent;
-      pointer-events: none;
-      opacity: 0.95;
+      width: 320px;
+      height: 320px;
+      right: -100px;
+      top: -160px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at center, rgba(121, 216, 255, 0.3), rgba(77, 118, 255, 0));
     }
 
-    .hero-screen::before {
-      width: 240px;
-      height: 240px;
-      right: -48px;
-      top: -36px;
-      border-color: rgba(121, 216, 255, 0.92) rgba(121, 216, 255, 0.92) rgba(77, 118, 255, 0.95) rgba(77, 118, 255, 0.95);
-      transform: rotate(35deg);
-      filter: blur(0.2px);
-    }
-
-    .hero-screen::after {
-      width: 190px;
-      height: 190px;
-      left: -84px;
-      top: 252px;
-      border-color: rgba(121, 216, 255, 0.9) rgba(20, 24, 47, 0.05) rgba(77, 118, 255, 0.7) rgba(20, 24, 47, 0.05);
-      transform: rotate(-25deg);
-    }
-
-    .hero-copy h1 {
-      max-width: 9ch;
+    .hero-card h1,
+    .panel-title,
+    .hero-metric .big-value,
+    .metric-card .big-value,
+    .stat-value,
+    .performance-item .value,
+    .ring-label .big-value {
       font-family: "Space Grotesk", sans-serif;
-      font-size: clamp(2rem, 4vw, 3rem);
-      line-height: 0.95;
-      letter-spacing: -0.05em;
-      margin-bottom: 16px;
+      letter-spacing: -0.04em;
     }
 
-    .hero-copy p {
-      max-width: 28ch;
-      color: rgba(219, 224, 255, 0.76);
-      font-size: 0.92rem;
-      line-height: 1.55;
-      margin-bottom: 26px;
+    .hero-card h1 {
+      max-width: 12ch;
+      font-size: clamp(2.5rem, 5vw, 4.4rem);
+      line-height: 0.92;
+      margin-bottom: 14px;
     }
 
-    .hero-footer {
+    .hero-card p {
+      max-width: 54ch;
+      color: rgba(223, 228, 255, 0.78);
+      line-height: 1.6;
+      font-size: 1rem;
+    }
+
+    .hero-actions {
+      margin-top: 20px;
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 14px;
-    }
-
-    .pager {
-      display: flex;
-      gap: 8px;
-    }
-
-    .pager span {
-      width: 20px;
-      height: 4px;
-      border-radius: 999px;
-      background: rgba(145, 153, 196, 0.22);
-    }
-
-    .pager span.active {
-      width: 34px;
-      background: linear-gradient(90deg, var(--blue-2), var(--blue));
+      gap: 12px;
+      flex-wrap: wrap;
     }
 
     .cta-pill,
@@ -205,7 +193,7 @@
     .action-btn,
     .copy-btn {
       border: 0;
-      border-radius: 12px;
+      border-radius: 14px;
       font-family: inherit;
       font-weight: 700;
       cursor: pointer;
@@ -220,133 +208,108 @@
     }
 
     .cta-pill {
-      padding: 12px 18px;
+      padding: 13px 18px;
       color: white;
       background: linear-gradient(135deg, #7ddcff 0%, #4d76ff 100%);
       box-shadow: 0 10px 24px rgba(77, 118, 255, 0.35);
     }
 
     .ghost-pill {
-      padding: 11px 16px;
+      padding: 13px 18px;
       color: #dce2ff;
       background: rgba(255, 255, 255, 0.06);
       border: 1px solid rgba(162, 187, 255, 0.14);
     }
 
-    .topbar,
-    .mini-topbar {
+    .hero-metric {
       display: flex;
-      align-items: center;
+      flex-direction: column;
       justify-content: space-between;
-      margin-bottom: 18px;
+      gap: 16px;
     }
 
-    .menu-icon,
-    .avatar-badge {
-      width: 36px;
-      height: 36px;
-      display: grid;
-      place-items: center;
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(164, 184, 255, 0.1);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
-    }
-
-    .menu-icon::before {
-      content: "\2630";
-      color: #f2f4ff;
-      font-size: 1rem;
-    }
-
-    .avatar-badge {
-      background: linear-gradient(180deg, #91e2ff 0%, #4e78ff 100%);
-      color: white;
-      font-size: 1rem;
-    }
-
-    .title-stack h2,
-    .section-head h3 {
-      font-family: "Space Grotesk", sans-serif;
-      letter-spacing: -0.04em;
-    }
-
-    .title-stack h2 {
-      font-size: 1.55rem;
-      margin-bottom: 4px;
-    }
-
-    .title-stack p,
+    .metric-label,
     .section-kicker,
-    .section-head p,
+    .stat-label,
+    .input-group label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: #c4c8e8;
+    }
+
+    .hero-metric .big-value {
+      font-size: clamp(2.4rem, 4vw, 3.2rem);
+      line-height: 0.95;
+    }
+
     .support-text,
-    .disclaimer {
+    .title-stack p,
+    .section-head p,
+    .ring-label p,
+    .disclaimer,
+    .performance-item span {
       color: var(--muted);
     }
 
-    .value-row {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      gap: 12px;
-      margin: 12px 0 18px;
-    }
-
-    .value-row .big-value,
-    .headline-metric .big-value {
-      font-family: "Space Grotesk", sans-serif;
-      font-size: clamp(2rem, 4vw, 2.7rem);
-      line-height: 0.95;
-      letter-spacing: -0.06em;
-    }
-
-    .delta-chip {
-      padding: 8px 10px;
+    .delta-chip,
+    .model-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
       border-radius: 999px;
       font-size: 0.78rem;
       font-weight: 700;
+      white-space: nowrap;
       background: rgba(77, 118, 255, 0.12);
       border: 1px solid rgba(121, 216, 255, 0.18);
-      color: #cfe6ff;
-      white-space: nowrap;
+      color: #d8ecff;
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 340px minmax(0, 1fr) 330px;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .left-rail,
+    .center-stage,
+    .right-rail {
+      display: grid;
+      gap: 18px;
     }
 
     .control-panel,
     .summary-panel,
-    .stats-grid .stat-card,
-    .code-panel,
     .chart-panel,
-    .error-banner,
-    .loading-panel {
-      background: var(--soft-panel);
-      border: 1px solid var(--soft-border);
-      backdrop-filter: blur(14px);
+    .code-panel,
+    .loading-panel,
+    .metric-card {
+      border-radius: 24px;
+      padding: 18px;
     }
 
-    .control-panel,
-    .summary-panel,
-    .chart-panel,
-    .code-panel,
-    .loading-panel {
-      border-radius: 22px;
-      padding: 16px;
+    .panel-title {
+      font-size: 1.4rem;
+      margin-bottom: 6px;
+    }
+
+    .title-stack {
+      margin-bottom: 18px;
     }
 
     .control-grid {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
-      margin-bottom: 14px;
+      gap: 14px;
+      margin-bottom: 16px;
     }
 
     .input-group label {
       display: block;
       margin-bottom: 8px;
-      font-size: 0.72rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      color: #c4c8e8;
     }
 
     .input-group input[type="text"],
@@ -379,7 +342,6 @@
     }
 
     .slider-block {
-      grid-column: 1 / -1;
       padding: 14px;
       border-radius: 16px;
       background: rgba(255, 255, 255, 0.03);
@@ -390,6 +352,7 @@
       display: flex;
       align-items: center;
       gap: 12px;
+      margin-top: 8px;
     }
 
     .slider-row input[type="range"] {
@@ -437,12 +400,11 @@
 
     .test-row {
       display: grid;
-      grid-template-columns: 1fr 112px;
+      grid-template-columns: 1fr 126px;
       gap: 10px;
     }
 
     .performance-list {
-      margin-top: 16px;
       display: grid;
       gap: 10px;
     }
@@ -451,56 +413,99 @@
       display: grid;
       grid-template-columns: 1fr auto;
       gap: 12px;
-      padding: 12px 14px;
-      border-radius: 16px;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(162, 187, 255, 0.08);
+      padding: 14px 16px;
+      border-radius: 18px;
       align-items: center;
     }
 
     .performance-item strong {
-      font-size: 0.82rem;
       display: block;
-      margin-bottom: 2px;
-    }
-
-    .performance-item span {
-      color: var(--muted);
-      font-size: 0.75rem;
+      font-size: 0.88rem;
+      margin-bottom: 3px;
     }
 
     .performance-item .value {
-      font-family: "Space Grotesk", sans-serif;
-      font-size: 1.15rem;
+      font-size: 1.2rem;
       color: white;
     }
 
-    .up { color: var(--green) !important; }
-    .down { color: var(--red) !important; }
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .metric-card .big-value {
+      margin-top: 12px;
+      font-size: 2rem;
+      line-height: 1;
+    }
 
     .section-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
       margin-bottom: 14px;
-      text-align: center;
+      flex-wrap: wrap;
     }
 
     .section-kicker {
-      font-size: 0.72rem;
-      text-transform: uppercase;
-      letter-spacing: 0.28em;
-      margin-bottom: 8px;
-      font-weight: 700;
+      margin-bottom: 6px;
     }
 
-    .headline-metric {
-      text-align: center;
-      margin-bottom: 18px;
+    .chart-panel {
+      padding: 20px;
+    }
+
+    .chart-heading,
+    .mini-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .chart-heading {
+      margin-bottom: 14px;
+    }
+
+    #chart,
+    #backtest-chart {
+      width: 100%;
+      height: 460px;
+      border-radius: 18px;
+      overflow: hidden;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .stats-grid .stat-card {
+      border-radius: 18px;
+      padding: 14px 15px;
+    }
+
+    .stat-label {
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 1.12rem;
+      line-height: 1.1;
+      color: white;
     }
 
     .ring-wrap {
       position: relative;
-      width: 212px;
-      height: 212px;
-      margin: 0 auto 16px;
+      width: 220px;
+      height: 220px;
+      margin: 4px auto 18px;
       display: grid;
       place-items: center;
     }
@@ -534,8 +539,7 @@
     }
 
     .ring-label .big-value {
-      font-family: "Space Grotesk", sans-serif;
-      font-size: 2.4rem;
+      font-size: 2.6rem;
       line-height: 1;
       margin-bottom: 6px;
     }
@@ -543,97 +547,12 @@
     .ring-label p {
       max-width: 13ch;
       margin: 0 auto;
-      font-size: 0.8rem;
-      color: var(--muted);
-      line-height: 1.35;
-    }
-
-    .chart-panel {
-      margin-bottom: 14px;
-    }
-
-    .chart-heading {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 10px;
-      flex-wrap: wrap;
-    }
-
-    .chart-heading h3,
-    .mini-heading h3 {
-      font-family: "Space Grotesk", sans-serif;
-      font-size: 1rem;
-      letter-spacing: -0.04em;
-    }
-
-    .model-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 7px 12px;
-      border-radius: 999px;
-      background: rgba(77, 118, 255, 0.12);
-      border: 1px solid rgba(121, 216, 255, 0.18);
-      color: #d8ecff;
-      font-size: 0.74rem;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    .support-text {
-      font-size: 0.78rem;
-      line-height: 1.45;
-    }
-
-    #chart,
-    #backtest-chart {
-      width: 100%;
-      height: 280px;
-      border-radius: 18px;
-      overflow: hidden;
-    }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-      margin-bottom: 14px;
-    }
-
-    .stats-grid .stat-card {
-      border-radius: 18px;
-      padding: 13px 14px;
-    }
-
-    .stat-label {
-      color: #9aa1ca;
-      font-size: 0.69rem;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
-
-    .stat-value {
-      font-family: "Space Grotesk", sans-serif;
-      font-size: 1.12rem;
-      line-height: 1.1;
-      color: white;
-    }
-
-    .mini-heading {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      margin: 18px 0 12px;
+      font-size: 0.82rem;
+      line-height: 1.4;
     }
 
     .error-banner {
-      margin-bottom: 14px;
+      margin-bottom: 12px;
       padding: 13px 15px;
       border-radius: 16px;
       color: #ffd9e2;
@@ -641,7 +560,7 @@
     }
 
     .loading-panel {
-      margin-bottom: 14px;
+      margin-bottom: 12px;
       display: flex;
       align-items: center;
       gap: 12px;
@@ -711,7 +630,7 @@
     }
 
     .code-panel pre {
-      max-height: 290px;
+      max-height: 320px;
       overflow: auto;
       border-radius: 16px;
       border: 1px solid rgba(162, 187, 255, 0.08);
@@ -723,83 +642,68 @@
     }
 
     .disclaimer {
-      font-size: 0.78rem;
+      font-size: 0.8rem;
       line-height: 1.55;
+      margin-top: 14px;
     }
 
-    .bottom-nav {
-      position: absolute;
-      left: 18px;
-      right: 18px;
-      bottom: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 14px;
-      border-radius: 18px;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(162, 187, 255, 0.08);
-    }
+    .up { color: var(--green) !important; }
+    .down { color: var(--red) !important; }
+    .hidden { display: none !important; }
+    .coverage-good { color: var(--green) !important; }
+    .coverage-bad { color: var(--red) !important; }
 
-    .nav-dot {
-      width: 18px;
-      height: 18px;
-      border-radius: 6px;
-      border: 1px solid rgba(210, 220, 255, 0.36);
-      opacity: 0.9;
-    }
-
-    .nav-dot.active {
-      background: linear-gradient(135deg, #7ddcff 0%, #4d76ff 100%);
-      border-color: transparent;
-      box-shadow: 0 8px 18px rgba(77, 118, 255, 0.28);
-    }
-
-    .hidden {
-      display: none !important;
-    }
-
-    .coverage-good {
-      color: var(--green) !important;
-    }
-
-    .coverage-bad {
-      color: var(--red) !important;
-    }
-
-    @media (max-width: 1140px) {
-      .phone-grid {
-        grid-template-columns: 1fr;
-        max-width: 420px;
-        margin: 0 auto;
+    @media (max-width: 1240px) {
+      .dashboard-grid {
+        grid-template-columns: 320px minmax(0, 1fr);
       }
 
-      .phone-card {
-        min-height: auto;
-      }
-
-      .bottom-nav {
-        position: static;
-        margin-top: 18px;
+      .right-rail {
+        grid-column: 1 / -1;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
     }
 
-    @media (max-width: 520px) {
+    @media (max-width: 980px) {
       .page-shell {
-        padding-inline: 14px;
+        padding-inline: 16px;
       }
 
-      .phone-card {
-        padding: 18px 14px 16px;
+      .hero-bar,
+      .dashboard-grid,
+      .right-rail,
+      .metric-grid,
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      #chart,
+      #backtest-chart {
+        height: 340px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .dashboard-shell {
+        padding: 18px;
         border-radius: 24px;
       }
 
-      .hero-copy h1 {
-        font-size: 2.3rem;
+      .hero-card,
+      .hero-metric,
+      .control-panel,
+      .summary-panel,
+      .chart-panel,
+      .code-panel,
+      .metric-card {
+        padding: 16px;
+        border-radius: 20px;
       }
 
-      .control-grid,
-      .stats-grid,
+      .hero-card h1 {
+        font-size: 2.6rem;
+      }
+
       .test-row {
         grid-template-columns: 1fr;
       }
@@ -811,161 +715,136 @@
 
       #chart,
       #backtest-chart {
-        height: 240px;
+        height: 280px;
       }
     }
   </style>
 </head>
 <body>
   <div class="page-shell">
-    <div class="eyebrow">Monte Carlo Forecast Studio</div>
+    <main class="dashboard-shell">
+      <div class="eyebrow">Monte Carlo Forecast Studio</div>
 
-    <main class="phone-grid">
-      <section class="phone-card hero-screen">
-        <div class="hero-copy">
-          <h1>The smartest way to test a stock story</h1>
-          <p>Run dark-theme Monte Carlo forecasts with fast what-if controls, percentile bands, and calibration-aware backtests.</p>
-        </div>
-
-        <div class="hero-footer">
-          <div class="pager">
-            <span class="active"></span>
-            <span></span>
-            <span></span>
+      <section class="hero-bar">
+        <div class="glass-panel hero-card">
+          <h1>Desktop-first stock scenario analysis</h1>
+          <p>Run Monte Carlo forecasts with a wider chart stage, faster parameter editing, and side-by-side metrics that make sense on a real screen.</p>
+          <div class="hero-actions">
+            <button class="cta-pill" onclick="document.getElementById('ticker').focus()">Start Forecasting</button>
+            <button class="ghost-pill" onclick="document.getElementById('backtest-btn').focus()">Jump to Backtest</button>
           </div>
-          <button class="cta-pill" onclick="document.getElementById('ticker').focus()">Get Started</button>
-        </div>
-      </section>
-
-      <section class="phone-card">
-        <div class="topbar">
-          <div class="menu-icon" aria-hidden="true"></div>
-          <div class="avatar-badge" aria-hidden="true">●</div>
         </div>
 
-        <div class="title-stack">
-          <h2>Build your forecast</h2>
-          <p>Configure the ticker, horizon, and simulation depth.</p>
-        </div>
-
-        <div class="value-row">
-          <div class="headline-metric">
+        <div class="glass-panel hero-metric">
+          <div>
+            <div class="metric-label">Live Spot</div>
             <div class="big-value" id="hero-price">$0</div>
           </div>
           <div class="delta-chip" id="hero-delta">Awaiting run</div>
-        </div>
-
-        <div class="control-panel">
-          <div class="control-grid">
-            <div class="input-group">
-              <label for="ticker">Stock Ticker</label>
-              <input type="text" id="ticker" value="AAPL" placeholder="AAPL, TSLA, MSFT" oninput="this.value=this.value.toUpperCase()" />
-            </div>
-
-            <div class="input-group">
-              <label for="lookback">Historical Lookback</label>
-              <select id="lookback">
-                <option value="6mo">6 Months</option>
-                <option value="1y">1 Year</option>
-                <option value="2y" selected>2 Years</option>
-                <option value="5y">5 Years</option>
-                <option value="10y">10 Years</option>
-              </select>
-            </div>
-
-            <div class="input-group">
-              <label for="forecast_days">Forecast Horizon</label>
-              <select id="forecast_days">
-                <option value="30">30 Days</option>
-                <option value="90">90 Days</option>
-                <option value="180">6 Months</option>
-                <option value="252" selected>1 Year (252 days)</option>
-                <option value="504">2 Years (504 days)</option>
-              </select>
-            </div>
-
-            <div class="slider-block">
-              <label>Simulations <span id="sim-display">500</span></label>
-              <div class="slider-row">
-                <input type="range" id="simulations" min="100" max="1000" step="100" value="500" oninput="document.getElementById('sim-display').textContent=this.value" />
-                <span class="slider-val" id="sim-val">500</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="action-stack">
-            <button class="action-btn primary" id="run-btn" onclick="runSimulation()">Run Simulation</button>
-            <div class="test-row">
-              <button class="action-btn secondary" id="backtest-btn" onclick="runBacktest()">Run Backtest</button>
-              <select id="test_days">
-                <option value="63">3 months</option>
-                <option value="126">6 months</option>
-                <option value="252" selected>1 year</option>
-                <option value="504">2 years</option>
-              </select>
-            </div>
-            <button class="action-btn secondary" id="csv-btn" onclick="downloadCSV()" disabled>Download CSV</button>
-          </div>
-        </div>
-
-        <div class="performance-list">
-          <div class="performance-item">
-            <div>
-              <strong>Median forecast</strong>
-              <span id="quick-summary">Run a simulation to populate the dashboard.</span>
-            </div>
-            <div class="value" id="quick-median">$0</div>
-          </div>
-          <div class="performance-item">
-            <div>
-              <strong>Volatility</strong>
-              <span>Annualized estimate from the fitted model.</span>
-            </div>
-            <div class="value" id="quick-vol">0%</div>
-          </div>
-          <div class="performance-item">
-            <div>
-              <strong>1-day VaR</strong>
-              <span>Stress check on short-term downside.</span>
-            </div>
-            <div class="value" id="quick-var">0%</div>
-          </div>
-        </div>
-
-        <div class="bottom-nav" aria-hidden="true">
-          <span class="nav-dot active"></span>
-          <span class="nav-dot"></span>
-          <span class="nav-dot"></span>
-          <span class="nav-dot"></span>
+          <div class="support-text">Run a simulation to populate the scenario dashboard and exportable path data.</div>
         </div>
       </section>
 
-      <section class="phone-card">
-        <div class="mini-topbar">
-          <div class="menu-icon" aria-hidden="true"></div>
-          <div class="avatar-badge" aria-hidden="true">●</div>
-        </div>
-
-        <div class="section-head">
-          <div class="section-kicker">Summaries</div>
-          <h3 id="chart-title">Forecast dashboard</h3>
-          <p id="chart-subtitle">Run a simulation to view percentile bands and scenarios.</p>
-        </div>
-
-        <div id="error-msg" class="error-banner hidden"></div>
-
-        <div id="loading-card" class="loading-panel hidden">
-          <div class="spinner"></div>
-          <div class="support-text">Fetching market history and generating simulation paths...</div>
-        </div>
-
-        <div id="results-card" class="summary-panel hidden">
-          <div class="ring-wrap">
-            <div class="ring"></div>
-            <div class="ring-label">
-              <div class="big-value" id="stat-prob">0%</div>
-              <p>Probability the forecast ends above spot price</p>
+      <section class="dashboard-grid">
+        <aside class="left-rail">
+          <div class="control-panel">
+            <div class="title-stack">
+              <h2 class="panel-title">Build your forecast</h2>
+              <p>Configure ticker history, scenario horizon, and simulation depth.</p>
             </div>
+
+            <div class="control-grid">
+              <div class="input-group">
+                <label for="ticker">Stock Ticker</label>
+                <input type="text" id="ticker" value="AAPL" placeholder="AAPL, TSLA, MSFT" oninput="this.value=this.value.toUpperCase()" />
+              </div>
+
+              <div class="input-group">
+                <label for="lookback">Historical Lookback</label>
+                <select id="lookback">
+                  <option value="6mo">6 Months</option>
+                  <option value="1y">1 Year</option>
+                  <option value="2y" selected>2 Years</option>
+                  <option value="5y">5 Years</option>
+                  <option value="10y">10 Years</option>
+                </select>
+              </div>
+
+              <div class="input-group">
+                <label for="forecast_days">Forecast Horizon</label>
+                <select id="forecast_days">
+                  <option value="30">30 Days</option>
+                  <option value="90">90 Days</option>
+                  <option value="180">6 Months</option>
+                  <option value="252" selected>1 Year (252 days)</option>
+                  <option value="504">2 Years (504 days)</option>
+                </select>
+              </div>
+
+              <div class="slider-block">
+                <label>Simulations <span id="sim-display">500</span></label>
+                <div class="slider-row">
+                  <input type="range" id="simulations" min="100" max="1000" step="100" value="500" oninput="document.getElementById('sim-display').textContent=this.value" />
+                  <span class="slider-val" id="sim-val">500</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="action-stack">
+              <button class="action-btn primary" id="run-btn" onclick="runSimulation()">Run Simulation</button>
+              <div class="test-row">
+                <button class="action-btn secondary" id="backtest-btn" onclick="runBacktest()">Run Backtest</button>
+                <select id="test_days">
+                  <option value="63">3 months</option>
+                  <option value="126">6 months</option>
+                  <option value="252" selected>1 year</option>
+                  <option value="504">2 years</option>
+                </select>
+              </div>
+              <button class="action-btn secondary" id="csv-btn" onclick="downloadCSV()" disabled>Download CSV</button>
+            </div>
+          </div>
+
+          <div class="performance-list">
+            <div class="performance-item">
+              <div>
+                <strong>Median forecast</strong>
+                <span id="quick-summary">Run a simulation to populate the dashboard.</span>
+              </div>
+              <div class="value" id="quick-median">$0</div>
+            </div>
+            <div class="performance-item">
+              <div>
+                <strong>Volatility</strong>
+                <span>Annualized estimate from the fitted model.</span>
+              </div>
+              <div class="value" id="quick-vol">0%</div>
+            </div>
+            <div class="performance-item">
+              <div>
+                <strong>1-day VaR</strong>
+                <span>Stress check on short-term downside.</span>
+              </div>
+              <div class="value" id="quick-var">0%</div>
+            </div>
+          </div>
+        </aside>
+
+        <section class="center-stage">
+          <div class="section-head">
+            <div>
+              <div class="section-kicker">Scenario Dashboard</div>
+              <h3 class="panel-title" id="chart-title">Forecast dashboard</h3>
+              <p id="chart-subtitle">Run a simulation to view percentile bands and scenarios.</p>
+            </div>
+            <span id="model-badge" class="model-badge">Idle</span>
+          </div>
+
+          <div id="error-msg" class="error-banner hidden"></div>
+
+          <div id="loading-card" class="loading-panel hidden">
+            <div class="spinner"></div>
+            <div class="support-text">Fetching market history and generating simulation paths...</div>
           </div>
 
           <div class="chart-panel">
@@ -974,97 +853,106 @@
                 <h3>Scenario fan</h3>
                 <div class="support-text">Median path plus bull and bear percentile bands.</div>
               </div>
-              <span id="model-badge" class="model-badge">Idle</span>
             </div>
             <div id="chart"></div>
           </div>
 
-          <div class="stats-grid">
-            <div class="stat-card">
-              <div class="stat-label">Current Price</div>
-              <div class="stat-value" id="stat-current">-</div>
+          <div id="backtest-card" class="summary-panel hidden">
+            <div class="chart-heading">
+              <div>
+                <h3 id="bt-title">Backtest</h3>
+                <div class="support-text" id="bt-meta">Coverage diagnostics will appear here after a run.</div>
+              </div>
+              <span id="bt-model-badge" class="model-badge">Idle</span>
             </div>
-            <div class="stat-card">
-              <div class="stat-label">Median Forecast</div>
-              <div class="stat-value" id="stat-median">-</div>
+
+            <div id="backtest-chart"></div>
+
+            <div class="mini-heading" style="margin-top:16px;">
+              <h3>Calibration review</h3>
+              <span class="support-text">Coverage quality across historical holdout data.</span>
             </div>
-            <div class="stat-card">
-              <div class="stat-label">Bear Case</div>
-              <div class="stat-value" id="stat-p5">-</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-label">Bull Case</div>
-              <div class="stat-value" id="stat-p95">-</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-label">Annual Volatility</div>
-              <div class="stat-value" id="stat-vol">-</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-label">Calibration</div>
-              <div class="stat-value" id="stat-calib">-</div>
+
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-label">90% Band</div>
+                <div class="stat-value" id="bt-cov90">-</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">50% Band</div>
+                <div class="stat-value" id="bt-cov50">-</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Assessment</div>
+                <div class="stat-value" id="bt-calibration">-</div>
+              </div>
             </div>
           </div>
+        </section>
 
-          <p class="disclaimer">Simulation uses GARCH(1,1) with Student-t innovations when enough data exists, otherwise a GBM fallback. Educational use only, not investment advice.</p>
-        </div>
-
-        <div id="backtest-card" class="summary-panel hidden" style="margin-top:14px;">
-          <div class="chart-heading">
-            <div>
-              <h3 id="bt-title">Backtest</h3>
-              <div class="support-text" id="bt-meta">Coverage diagnostics will appear here after a run.</div>
+        <aside class="right-rail">
+          <div id="results-card" class="summary-panel hidden">
+            <div class="ring-wrap">
+              <div class="ring"></div>
+              <div class="ring-label">
+                <div class="big-value" id="stat-prob">0%</div>
+                <p>Probability the forecast ends above spot price</p>
+              </div>
             </div>
-            <span id="bt-model-badge" class="model-badge">Idle</span>
+
+            <div class="metric-grid">
+              <div class="metric-card">
+                <div class="stat-label">Current Price</div>
+                <div class="big-value" id="stat-current">-</div>
+              </div>
+              <div class="metric-card">
+                <div class="stat-label">Median Forecast</div>
+                <div class="big-value" id="stat-median">-</div>
+              </div>
+            </div>
+
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-label">Bear Case</div>
+                <div class="stat-value" id="stat-p5">-</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Bull Case</div>
+                <div class="stat-value" id="stat-p95">-</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Annual Volatility</div>
+                <div class="stat-value" id="stat-vol">-</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Calibration</div>
+                <div class="stat-value" id="stat-calib">-</div>
+              </div>
+            </div>
+
+            <p class="disclaimer">Simulation uses GARCH(1,1) with Student-t innovations when enough data exists, otherwise a GBM fallback. Educational use only, not investment advice.</p>
           </div>
 
-          <div id="backtest-chart"></div>
-
-          <div class="mini-heading">
-            <h3>Calibration review</h3>
-            <span class="support-text">Coverage quality across historical holdout data.</span>
-          </div>
-
-          <div class="stats-grid">
-            <div class="stat-card">
-              <div class="stat-label">90% Band</div>
-              <div class="stat-value" id="bt-cov90">-</div>
+          <div class="summary-panel">
+            <div class="mini-heading">
+              <h3>Source</h3>
+              <span class="support-text">Keep the Python logic close at hand.</span>
             </div>
-            <div class="stat-card">
-              <div class="stat-label">50% Band</div>
-              <div class="stat-value" id="bt-cov50">-</div>
-            </div>
-            <div class="stat-card" style="grid-column: 1 / -1;">
-              <div class="stat-label">Assessment</div>
-              <div class="stat-value" id="bt-calibration">-</div>
+
+            <button class="code-toggle-btn" id="code-toggle-btn" onclick="toggleCode()">
+              <span>View Python Code</span>
+              <span class="chevron">⌄</span>
+            </button>
+
+            <div class="code-panel hidden" id="code-panel">
+              <div class="code-header">
+                <span>api/simulate.py</span>
+                <button class="copy-btn" id="copy-btn" onclick="copyCode()">Copy</button>
+              </div>
+              <pre><code class="language-python" id="code-content"></code></pre>
             </div>
           </div>
-        </div>
-
-        <div class="mini-heading">
-          <h3>Source</h3>
-          <span class="support-text">Keep the Python logic close at hand.</span>
-        </div>
-
-        <button class="code-toggle-btn" id="code-toggle-btn" onclick="toggleCode()">
-          <span>View Python Code</span>
-          <span class="chevron">⌄</span>
-        </button>
-
-        <div class="code-panel hidden" id="code-panel">
-          <div class="code-header">
-            <span>api/simulate.py</span>
-            <button class="copy-btn" id="copy-btn" onclick="copyCode()">Copy</button>
-          </div>
-          <pre><code class="language-python" id="code-content"></code></pre>
-        </div>
-
-        <div class="bottom-nav" aria-hidden="true">
-          <span class="nav-dot"></span>
-          <span class="nav-dot active"></span>
-          <span class="nav-dot"></span>
-          <span class="nav-dot"></span>
-        </div>
+        </aside>
       </section>
     </main>
   </div>

@@ -13,6 +13,14 @@ except Exception:
     _ARCH = False
 
 
+_TARGET_90 = 0.90
+_TARGET_50 = 0.50
+_TOL_90 = 0.08
+_TOL_50 = 0.10
+_K_MIN = 0.5
+_K_MAX = 3.0
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Simulation engines
 # ─────────────────────────────────────────────────────────────────────────────
@@ -91,20 +99,37 @@ def _gbm_simulate(log_returns, current_price, n_sims, n_days):
     return paths, info
 
 
+def _coverage_stats(paths, actual):
+    p5  = np.percentile(paths[:, 1:],  5, axis=0)
+    p25 = np.percentile(paths[:, 1:], 25, axis=0)
+    p75 = np.percentile(paths[:, 1:], 75, axis=0)
+    p95 = np.percentile(paths[:, 1:], 95, axis=0)
+    cov_90 = float(np.mean((actual >= p5)  & (actual <= p95)))
+    cov_50 = float(np.mean((actual >= p25) & (actual <= p75)))
+    return cov_90, cov_50
+
+
+def _coverage_score(cov_90, cov_50, k):
+    penalty_90 = max(0.0, abs(cov_90 - _TARGET_90) - _TOL_90)
+    penalty_50 = max(0.0, abs(cov_50 - _TARGET_50) - _TOL_50)
+    inside_bonus = 0.0 if (penalty_90 > 0.0 or penalty_50 > 0.0) else abs(k - 1.0) * 0.01
+    return (
+        penalty_90 * 100.0
+        + penalty_50 * 100.0
+        + abs(cov_90 - _TARGET_90)
+        + abs(cov_50 - _TARGET_50)
+        + inside_bonus
+    )
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Walk-forward sigma calibration
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _compute_calib_factor(close, n_sims=200):
     """
-    Find sigma multiplier k such that the 90% band achieves ~90% empirical coverage.
-
-    Method: hold out the last cal_len days of training data as a calibration window.
-    Simulate forward from the start of that window, measure coverage, then:
-        k = Φ⁻¹(0.95) / Φ⁻¹((1 + observed_coverage) / 2)
-
-    If bands are too narrow (coverage < 90%), k > 1 (widen them).
-    If bands are too wide (coverage > 90%), k < 1 (narrow them).
+    Search for a volatility multiplier k that brings calibration-window
+    coverage as close as possible to the acceptable 90% and 50% band targets.
     """
     cal_len = min(63, max(30, len(close) // 6))
     if len(close) < cal_len + 100:
@@ -136,15 +161,25 @@ def _compute_calib_factor(close, n_sims=200):
     np.random.set_state(saved)
 
     actual = cal.values[1:]
-    p5     = np.percentile(paths[:, 1:],  5, axis=0)
-    p95    = np.percentile(paths[:, 1:], 95, axis=0)
-    cov    = float(np.mean((actual >= p5) & (actual <= p95)))
+    best_k = 1.0
+    best_score = float("inf")
 
-    if cov <= 0.02 or cov >= 0.98:
-        return 1.0
+    candidates = np.linspace(_K_MIN, _K_MAX, 51)
+    for _ in range(3):
+      for k in candidates:
+        scaled = _apply_calib(paths, float(k))
+        cov_90, cov_50 = _coverage_stats(scaled, actual)
+        score = _coverage_score(cov_90, cov_50, float(k))
+        if score < best_score:
+          best_score = score
+          best_k = float(k)
 
-    k = float(_norm.ppf(0.95) / _norm.ppf((1.0 + cov) / 2.0))
-    return float(np.clip(k, 0.5, 3.0))
+      step = float(candidates[1] - candidates[0]) if len(candidates) > 1 else 0.1
+      lo = max(_K_MIN, best_k - 2.0 * step)
+      hi = min(_K_MAX, best_k + 2.0 * step)
+      candidates = np.linspace(lo, hi, 17)
+
+    return float(np.clip(best_k, _K_MIN, _K_MAX))
 
 
 def _apply_calib(paths, k):
@@ -208,6 +243,10 @@ class handler(BaseHTTPRequestHandler):
             else:
                 paths, model_info = _gbm_simulate(
                     log_returns, current_price, n_simulations, forecast_days)
+
+            calib_k = _compute_calib_factor(close)
+            paths = _apply_calib(paths, calib_k)
+            model_info['calib_k'] = round(calib_k, 3)
 
             # ── 4. Date index ─────────────────────────────────────────────────
             last_date    = hist.index[-1].to_pydatetime()

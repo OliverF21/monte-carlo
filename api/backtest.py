@@ -3,7 +3,6 @@ import json
 import numpy as np
 import pandas as pd
 import yfinance as yf
-from scipy.stats import norm as _norm
 
 yf.set_tz_cache_location("/tmp")
 
@@ -12,6 +11,14 @@ try:
     _ARCH = True
 except Exception:
     _ARCH = False
+
+
+_TARGET_90 = 0.90
+_TARGET_50 = 0.50
+_TOL_90 = 0.08
+_TOL_50 = 0.10
+_K_MIN = 0.5
+_K_MAX = 3.0
 
 
 def _garch_simulate(log_returns, current_price, n_sims, n_days):
@@ -62,6 +69,29 @@ def _gbm_simulate(log_returns, current_price, n_sims, n_days):
     return paths, 'GBM'
 
 
+def _coverage_stats(paths, actual):
+    p5  = np.percentile(paths[:, 1:],  5, axis=0)
+    p25 = np.percentile(paths[:, 1:], 25, axis=0)
+    p75 = np.percentile(paths[:, 1:], 75, axis=0)
+    p95 = np.percentile(paths[:, 1:], 95, axis=0)
+    cov_90 = float(np.mean((actual >= p5)  & (actual <= p95)))
+    cov_50 = float(np.mean((actual >= p25) & (actual <= p75)))
+    return cov_90, cov_50
+
+
+def _coverage_score(cov_90, cov_50, k):
+    penalty_90 = max(0.0, abs(cov_90 - _TARGET_90) - _TOL_90)
+    penalty_50 = max(0.0, abs(cov_50 - _TARGET_50) - _TOL_50)
+    inside_bonus = 0.0 if (penalty_90 > 0.0 or penalty_50 > 0.0) else abs(k - 1.0) * 0.01
+    return (
+        penalty_90 * 100.0
+        + penalty_50 * 100.0
+        + abs(cov_90 - _TARGET_90)
+        + abs(cov_50 - _TARGET_50)
+        + inside_bonus
+    )
+
+
 def _compute_calib_factor(close, n_sims=200):
     cal_len = min(63, max(30, len(close) // 6))
     if len(close) < cal_len + 100:
@@ -87,13 +117,25 @@ def _compute_calib_factor(close, n_sims=200):
         return 1.0
     np.random.set_state(saved)
     actual = cal.values[1:]
-    p5  = np.percentile(paths[:, 1:],  5, axis=0)
-    p95 = np.percentile(paths[:, 1:], 95, axis=0)
-    cov = float(np.mean((actual >= p5) & (actual <= p95)))
-    if cov <= 0.02 or cov >= 0.98:
-        return 1.0
-    k = float(_norm.ppf(0.95) / _norm.ppf((1.0 + cov) / 2.0))
-    return float(np.clip(k, 0.5, 3.0))
+    best_k = 1.0
+    best_score = float("inf")
+
+    candidates = np.linspace(_K_MIN, _K_MAX, 51)
+    for _ in range(3):
+        for k in candidates:
+            scaled = _apply_calib(paths, float(k))
+            cov_90, cov_50 = _coverage_stats(scaled, actual)
+            score = _coverage_score(cov_90, cov_50, float(k))
+            if score < best_score:
+                best_score = score
+                best_k = float(k)
+
+        step = float(candidates[1] - candidates[0]) if len(candidates) > 1 else 0.1
+        lo = max(_K_MIN, best_k - 2.0 * step)
+        hi = min(_K_MAX, best_k + 2.0 * step)
+        candidates = np.linspace(lo, hi, 17)
+
+    return float(np.clip(best_k, _K_MIN, _K_MAX))
 
 
 def _apply_calib(paths, k):

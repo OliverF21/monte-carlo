@@ -3,35 +3,34 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Monte Carlo stock price simulator using GARCH and GBM models. Built for finance students to explore statistical forecasting." />
+  <meta property="og:title" content="Monte Carlo Stock Simulator" />
+  <meta property="og:description" content="Forecast stock prices with Monte Carlo simulation using GARCH and GBM models." />
   <title>Monte Carlo Stock Simulator</title>
 
-  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js" defer></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
   <style>
     :root {
-      --bg-top: #b5b7d0;
-      --bg-bottom: #a7aaca;
-      --panel: rgba(13, 16, 35, 0.92);
-      --panel-strong: rgba(10, 13, 29, 0.98);
-      --panel-soft: rgba(255, 255, 255, 0.04);
-      --panel-border: rgba(168, 193, 255, 0.12);
-      --text: #f5f7ff;
-      --muted: #96a0c8;
-      --blue: #4d76ff;
-      --cyan: #81ddff;
-      --green: #48d699;
-      --red: #ff6f91;
-      --amber: #ffbf66;
-      --shadow: 0 22px 50px rgba(12, 14, 31, 0.22);
-      --radius-xl: 28px;
-      --radius-lg: 22px;
-      --radius-md: 16px;
+      --bg: #f7f8fa;
+      --surface: #ffffff;
+      --border: #e0e3ea;
+      --text: #111827;
+      --text-secondary: #4b5563;
+      --text-tertiary: #9ca3af;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --accent-soft: rgba(37, 99, 235, 0.08);
+      --green: #059669;
+      --red: #dc2626;
+      --amber: #d97706;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+      --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06);
+      --radius: 12px;
+      --radius-sm: 8px;
     }
 
     *, *::before, *::after {
@@ -42,251 +41,182 @@
 
     body {
       min-height: 100vh;
-      font-family: "Plus Jakarta Sans", sans-serif;
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: var(--text);
-      background:
-        radial-gradient(circle at top left, rgba(126, 176, 255, 0.34), transparent 24%),
-        radial-gradient(circle at bottom right, rgba(77, 118, 255, 0.18), transparent 28%),
-        linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
-      overflow-x: hidden;
-    }
-
-    body::before,
-    body::after {
-      content: "";
-      position: fixed;
-      border-radius: 50%;
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    body::before {
-      width: 26rem;
-      height: 26rem;
-      left: -10rem;
-      top: 4rem;
-      background: radial-gradient(circle, rgba(129, 221, 255, 0.24), rgba(129, 221, 255, 0));
-    }
-
-    body::after {
-      width: 24rem;
-      height: 24rem;
-      right: -7rem;
-      bottom: 4rem;
-      background: radial-gradient(circle, rgba(77, 118, 255, 0.18), rgba(77, 118, 255, 0));
+      background: var(--bg);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
     }
 
     .page-shell {
-      position: relative;
-      z-index: 1;
-      max-width: 1240px;
+      max-width: 1120px;
       margin: 0 auto;
-      padding: 36px 22px 56px;
+      padding: 32px 20px 48px;
     }
 
     header {
-      position: relative;
-      overflow: hidden;
-      margin-bottom: 22px;
-      padding: 28px 30px;
-      border-radius: 32px;
-      background: linear-gradient(180deg, rgba(15, 18, 39, 0.96) 0%, rgba(10, 13, 29, 0.98) 100%);
-      border: 1px solid var(--panel-border);
-      box-shadow: var(--shadow);
-    }
-
-    header::before {
-      content: "";
-      position: absolute;
-      width: 340px;
-      height: 340px;
-      right: -110px;
-      top: -190px;
-      border-radius: 50%;
-      background: radial-gradient(circle at center, rgba(129, 221, 255, 0.34), rgba(77, 118, 255, 0));
-      pointer-events: none;
-    }
-
-    .header-kicker {
-      margin-bottom: 12px;
-      font-size: 0.72rem;
-      font-weight: 700;
-      letter-spacing: 0.24em;
-      text-transform: uppercase;
-      color: rgba(255, 255, 255, 0.68);
+      margin-bottom: 16px;
+      padding: 24px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
     }
 
     header h1 {
-      font-family: "Space Grotesk", sans-serif;
-      font-size: clamp(2.2rem, 4vw, 3.6rem);
-      line-height: 0.95;
-      letter-spacing: -0.05em;
-      margin-bottom: 10px;
-      max-width: 12ch;
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
     }
 
     header p {
-      max-width: 62ch;
-      color: rgba(224, 229, 255, 0.78);
-      line-height: 1.6;
-      font-size: 0.98rem;
+      color: var(--text-secondary);
+      font-size: 0.9375rem;
+      max-width: 64ch;
     }
 
     main {
       display: flex;
       flex-direction: column;
-      gap: 18px;
+      gap: 14px;
     }
 
     .card {
-      position: relative;
-      overflow: hidden;
-      padding: 22px;
-      border-radius: var(--radius-xl);
-      background: linear-gradient(180deg, rgba(15, 18, 39, 0.95) 0%, rgba(11, 14, 31, 0.97) 100%);
-      border: 1px solid var(--panel-border);
-      box-shadow: var(--shadow);
-    }
-
-    .card::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background:
-        radial-gradient(circle at top left, rgba(129, 221, 255, 0.12), transparent 22%),
-        radial-gradient(circle at 75% 22%, rgba(77, 118, 255, 0.12), transparent 24%);
-      pointer-events: none;
-    }
-
-    .card > * {
-      position: relative;
-      z-index: 1;
+      padding: 20px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
     }
 
     .section-head {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 16px;
+      gap: 12px;
       flex-wrap: wrap;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
 
     .section-head h2 {
-      font-family: "Space Grotesk", sans-serif;
-      font-size: 1.28rem;
-      letter-spacing: -0.04em;
+      font-size: 1.125rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
     }
 
     .section-meta {
-      font-size: 0.84rem;
-      color: var(--muted);
+      font-size: 0.8125rem;
+      color: var(--text-tertiary);
     }
 
+    /* -- Inputs -- */
     .input-grid {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 14px;
-      margin-bottom: 18px;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 14px;
     }
 
     .input-group label {
       display: block;
-      margin-bottom: 8px;
-      font-size: 0.72rem;
-      font-weight: 700;
-      letter-spacing: 0.14em;
+      margin-bottom: 6px;
+      font-size: 0.6875rem;
+      font-weight: 600;
       text-transform: uppercase;
-      color: #c4c9ea;
+      letter-spacing: 0.06em;
+      color: var(--text-tertiary);
     }
 
     .input-group input[type="text"],
-    .input-group select {
+    .input-group select,
+    .inline-select {
       width: 100%;
-      padding: 13px 14px;
-      border-radius: 14px;
-      border: 1px solid rgba(162, 187, 255, 0.12);
-      background: rgba(255, 255, 255, 0.05);
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface);
       color: var(--text);
       font: inherit;
-      appearance: none;
+      font-size: 0.9375rem;
       outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .input-group select,
+    .inline-select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' viewBox='0 0 16 16'%3E%3Cpath stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 34px;
     }
 
     .input-group input[type="text"]::placeholder {
-      color: rgba(223, 228, 255, 0.42);
+      color: var(--text-tertiary);
     }
 
     .input-group input[type="text"]:focus,
-    .input-group select:focus {
-      border-color: rgba(129, 221, 255, 0.45);
-      box-shadow: 0 0 0 4px rgba(129, 221, 255, 0.08);
+    .input-group select:focus,
+    .inline-select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
     }
 
     #ticker {
       text-transform: uppercase;
-      letter-spacing: 0.12em;
-      font-weight: 700;
+      letter-spacing: 0.08em;
+      font-weight: 600;
     }
 
+    /* -- Slider -- */
     .slider-group {
-      grid-column: span 2;
-      padding: 14px 16px;
-      border-radius: 16px;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(162, 187, 255, 0.08);
+      grid-column: 1 / -1;
+      padding: 12px 14px;
+      border-radius: var(--radius-sm);
+      background: var(--bg);
+      border: 1px solid var(--border);
     }
 
     .slider-top {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
 
-    .slider-top span {
-      font-size: 0.72rem;
-      font-weight: 700;
-      letter-spacing: 0.14em;
+    .slider-top label {
+      font-size: 0.6875rem;
+      font-weight: 600;
       text-transform: uppercase;
-      color: #c4c9ea;
-    }
-
-    .slider-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .slider-row input[type="range"] {
-      flex: 1;
-      accent-color: var(--cyan);
+      letter-spacing: 0.06em;
+      color: var(--text-tertiary);
+      margin: 0;
     }
 
     .slider-val {
-      min-width: 52px;
-      text-align: right;
-      font-family: "Space Grotesk", sans-serif;
-      font-size: 1.1rem;
+      font-size: 1rem;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      color: var(--text);
     }
 
-    .btn-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .btn {
-      padding: 13px 18px;
-      border: 0;
-      border-radius: 14px;
-      font: inherit;
-      font-weight: 700;
-      color: white;
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
       cursor: pointer;
-      transition: transform 0.16s ease, opacity 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    /* -- Buttons -- */
+    .btn {
+      padding: 10px 18px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font: inherit;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
     }
 
     .btn:hover:not(:disabled) {
@@ -294,129 +224,189 @@
     }
 
     .btn:disabled {
-      opacity: 0.42;
+      opacity: 0.5;
       cursor: not-allowed;
       transform: none;
     }
 
+    .btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
     .btn-primary {
-      background: linear-gradient(135deg, var(--cyan) 0%, var(--blue) 100%);
-      box-shadow: 0 14px 26px rgba(77, 118, 255, 0.28);
+      background: var(--accent);
+      color: white;
+      box-shadow: 0 1px 3px rgba(37, 99, 235, 0.3);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--accent-hover);
     }
 
     .btn-secondary {
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(162, 187, 255, 0.12);
-      color: #e8ecff;
-    }
-
-    .inline-select {
-      min-width: 130px;
-      padding: 13px 14px;
-      border-radius: 14px;
-      border: 1px solid rgba(162, 187, 255, 0.12);
-      background: rgba(255, 255, 255, 0.05);
+      background: var(--surface);
       color: var(--text);
-      font: inherit;
-      outline: none;
+      border: 1px solid var(--border);
     }
 
+    .btn-secondary:hover:not(:disabled) {
+      background: var(--bg);
+    }
+
+    /* -- Divider -- */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 14px 0;
+    }
+
+    .backtest-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .backtest-row > label {
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .backtest-row .inline-select {
+      width: auto;
+      min-width: 120px;
+    }
+
+    /* -- States -- */
     .hidden {
       display: none !important;
     }
 
-    #error-msg {
-      padding: 13px 15px;
-      border-radius: var(--radius-md);
-      background: rgba(255, 111, 145, 0.1);
-      border: 1px solid rgba(255, 111, 145, 0.18);
-      color: #ffd8e3;
-      font-size: 0.9rem;
+    .error-msg {
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+      font-size: 0.875rem;
     }
 
     .loading-wrap {
       display: flex;
       align-items: center;
-      gap: 12px;
-      color: var(--muted);
+      gap: 10px;
+      color: var(--text-secondary);
+      font-size: 0.875rem;
     }
 
     .spinner {
-      width: 24px;
-      height: 24px;
+      width: 20px;
+      height: 20px;
       border-radius: 50%;
-      border: 3px solid rgba(255, 255, 255, 0.15);
-      border-top-color: var(--cyan);
-      animation: spin 0.85s linear infinite;
-      flex: 0 0 auto;
+      border: 2.5px solid var(--border);
+      border-top-color: var(--accent);
+      animation: spin 0.8s linear infinite;
+      flex-shrink: 0;
     }
 
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
 
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-tertiary);
+      font-size: 0.9375rem;
+    }
+
+    .empty-state strong {
+      color: var(--text-secondary);
+    }
+
+    /* -- Results -- */
     .model-badge {
-      display: inline-flex;
-      align-items: center;
-      padding: 8px 12px;
-      border-radius: 999px;
-      background: rgba(77, 118, 255, 0.12);
-      border: 1px solid rgba(129, 221, 255, 0.18);
-      color: #d8ecff;
-      font-size: 0.74rem;
-      font-weight: 700;
-      letter-spacing: 0.08em;
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 0.6875rem;
+      font-weight: 600;
       text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
     }
 
     #chart,
     #backtest-chart {
       width: 100%;
-      height: 460px;
-      border-radius: 18px;
+      height: 420px;
+      border-radius: var(--radius-sm);
       overflow: hidden;
     }
 
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 12px;
-      margin-top: 18px;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 16px;
     }
 
     .stat-card {
-      padding: 15px 16px;
-      border-radius: 18px;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(162, 187, 255, 0.1);
+      padding: 12px 14px;
+      border-radius: var(--radius-sm);
+      background: var(--bg);
+      border: 1px solid var(--border);
     }
 
     .stat-label {
-      margin-bottom: 8px;
-      font-size: 0.69rem;
-      font-weight: 700;
-      letter-spacing: 0.12em;
+      margin-bottom: 4px;
+      font-size: 0.6875rem;
+      font-weight: 500;
       text-transform: uppercase;
-      color: #99a2cb;
+      letter-spacing: 0.05em;
+      color: var(--text-tertiary);
+      cursor: help;
     }
 
     .stat-value {
-      font-family: "Space Grotesk", sans-serif;
-      font-size: 1.16rem;
-      line-height: 1.1;
-      color: white;
+      font-size: 1.0625rem;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      color: var(--text);
     }
 
-    .coverage-good { color: var(--green) !important; }
-    .coverage-bad { color: var(--red) !important; }
-    .up { color: var(--green) !important; }
-    .down { color: var(--red) !important; }
+    .stat-value .val-up { color: var(--green); }
+    .stat-value .val-down { color: var(--red); }
+    .stat-value.val-up { color: var(--green); }
+    .stat-value.val-down { color: var(--red); }
+
+    .results-actions {
+      margin-top: 14px;
+      display: flex;
+      gap: 10px;
+    }
 
     .disclaimer {
-      margin-top: 16px;
-      font-size: 0.8rem;
-      line-height: 1.55;
-      color: var(--muted);
+      margin-top: 14px;
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      color: var(--text-tertiary);
+    }
+
+    /* -- Code viewer -- */
+    .card--muted {
+      background: var(--bg);
+      box-shadow: none;
     }
 
     .code-toggle-btn {
@@ -424,19 +414,30 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 10px;
-      padding: 14px 16px;
-      border-radius: 16px;
-      border: 1px solid rgba(162, 187, 255, 0.12);
-      background: rgba(255, 255, 255, 0.05);
-      color: white;
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-secondary);
       font: inherit;
-      font-weight: 700;
+      font-size: 0.875rem;
+      font-weight: 500;
       cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .code-toggle-btn:hover {
+      background: var(--bg);
+    }
+
+    .code-toggle-btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
     }
 
     .code-toggle-btn .chevron {
       transition: transform 0.2s ease;
+      font-size: 1.1em;
     }
 
     .code-toggle-btn.open .chevron {
@@ -444,74 +445,96 @@
     }
 
     .code-panel {
-      margin-top: 12px;
-      padding: 16px;
-      border-radius: 20px;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(162, 187, 255, 0.1);
+      margin-top: 10px;
+      padding: 14px;
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      border: 1px solid var(--border);
     }
 
     .code-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 10px;
-      color: #dce1ff;
-      font-size: 0.82rem;
+      margin-bottom: 8px;
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
       font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     }
 
     .copy-btn {
-      padding: 9px 12px;
-      border: 0;
-      border-radius: 12px;
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
       color: white;
       font: inherit;
-      font-weight: 700;
+      font-size: 0.75rem;
+      font-weight: 600;
       cursor: pointer;
-      background: linear-gradient(135deg, var(--cyan) 0%, var(--blue) 100%);
+      background: var(--accent);
+      transition: background 0.15s;
+    }
+
+    .copy-btn:hover {
+      background: var(--accent-hover);
+    }
+
+    .copy-btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
     }
 
     .copy-btn.copied {
-      background: linear-gradient(135deg, #7af7d2 0%, #26b46f 100%);
+      background: var(--green);
     }
 
     .code-panel pre {
-      max-height: 360px;
+      max-height: 340px;
       overflow: auto;
-      border-radius: 16px;
-      border: 1px solid rgba(162, 187, 255, 0.08);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      margin: 0;
     }
 
     .code-panel pre code {
-      font-size: 0.79rem;
-      line-height: 1.55;
+      font-size: 0.8125rem;
+      line-height: 1.5;
     }
 
-    @media (max-width: 1080px) {
-      .input-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
+    /* -- Animations -- */
+    @keyframes reveal {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
 
-      .slider-group {
-        grid-column: span 2;
+    .card-reveal {
+      animation: reveal 0.3s ease-out;
+    }
+
+    /* -- Responsive -- */
+    @media (max-width: 768px) {
+      .input-grid {
+        grid-template-columns: 1fr 1fr;
       }
 
       .stats-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: 1fr 1fr;
+      }
+
+      #chart,
+      #backtest-chart {
+        height: 300px;
       }
     }
 
-    @media (max-width: 640px) {
+    @media (max-width: 480px) {
       .page-shell {
-        padding: 18px 14px 34px;
+        padding: 16px 12px 32px;
       }
 
       header,
       .card {
-        padding: 18px;
-        border-radius: 24px;
+        padding: 16px;
       }
 
       .input-grid,
@@ -523,18 +546,13 @@
         grid-column: auto;
       }
 
-      .btn-row {
+      .backtest-row {
         flex-direction: column;
         align-items: stretch;
       }
 
-      .inline-select {
+      .backtest-row .inline-select {
         width: 100%;
-      }
-
-      #chart,
-      #backtest-chart {
-        height: 320px;
       }
     }
   </style>
@@ -542,168 +560,184 @@
 <body>
   <div class="page-shell">
     <header>
-      <div class="header-kicker">Monte Carlo Forecast Studio</div>
       <h1>Monte Carlo Stock Simulator</h1>
-      <p>GARCH(1,1) plus Student-t forecasting with a cleaner desktop presentation, while keeping the original workflow and information architecture intact.</p>
+      <p>Model future stock prices using Monte Carlo simulation. Explore how GARCH and GBM models forecast market behavior under uncertainty.</p>
     </header>
 
     <main>
-      <div class="card">
+      <!-- Controls -->
+      <section class="card">
         <div class="section-head">
-          <h2>Simulation Controls</h2>
-          <span class="section-meta">Configure the ticker, lookback window, and forecast horizon.</span>
+          <h2>Configuration</h2>
+          <span class="section-meta">Set the ticker, lookback window, and forecast horizon.</span>
         </div>
 
-        <div class="input-grid">
-          <div class="input-group">
-            <label for="ticker">Stock Ticker</label>
-            <input type="text" id="ticker" value="AAPL" placeholder="AAPL, TSLA, MSFT" oninput="this.value=this.value.toUpperCase()" />
-          </div>
-
-          <div class="input-group">
-            <label for="lookback">Historical Lookback</label>
-            <select id="lookback">
-              <option value="6mo">6 Months</option>
-              <option value="1y">1 Year</option>
-              <option value="2y" selected>2 Years</option>
-              <option value="5y">5 Years</option>
-              <option value="10y">10 Years</option>
-            </select>
-          </div>
-
-          <div class="input-group">
-            <label for="forecast_days">Forecast Horizon</label>
-            <select id="forecast_days">
-              <option value="30">30 Days</option>
-              <option value="90">90 Days</option>
-              <option value="180">6 Months</option>
-              <option value="252" selected>1 Year (252 days)</option>
-              <option value="504">2 Years (504 days)</option>
-            </select>
-          </div>
-
-          <div class="slider-group">
-            <div class="slider-top">
-              <label style="margin:0;">Simulations</label>
-              <span id="sim-display">500</span>
+        <form id="sim-form">
+          <div class="input-grid">
+            <div class="input-group">
+              <label for="ticker">Stock Ticker</label>
+              <input type="text" id="ticker" value="AAPL" placeholder="e.g. AAPL, TSLA, MSFT" />
             </div>
-            <div class="slider-row">
-              <input type="range" id="simulations" min="100" max="1000" step="100" value="500" oninput="document.getElementById('sim-display').textContent=this.value" />
-              <span class="slider-val" id="sim-val">500</span>
+
+            <div class="input-group">
+              <label for="lookback">Historical Lookback</label>
+              <select id="lookback">
+                <option value="6mo">6 Months</option>
+                <option value="1y">1 Year</option>
+                <option value="2y" selected>2 Years</option>
+                <option value="5y">5 Years</option>
+                <option value="10y">10 Years</option>
+              </select>
+            </div>
+
+            <div class="input-group">
+              <label for="forecast_days">Forecast Horizon</label>
+              <select id="forecast_days">
+                <option value="30">30 Days</option>
+                <option value="90">90 Days</option>
+                <option value="180">6 Months</option>
+                <option value="252" selected>1 Year (252 days)</option>
+                <option value="504">2 Years (504 days)</option>
+              </select>
+            </div>
+
+            <div class="slider-group">
+              <div class="slider-top">
+                <label for="simulations">Simulations</label>
+                <span class="slider-val" id="sim-val">500</span>
+              </div>
+              <input type="range" id="simulations" min="100" max="1000" step="100" value="500" />
             </div>
           </div>
-        </div>
 
-        <div class="btn-row">
-          <button class="btn btn-primary" id="run-btn" onclick="runSimulation()">Run Simulation</button>
-          <button class="btn btn-secondary" id="backtest-btn" onclick="runBacktest()">Run Backtest</button>
+          <button type="submit" class="btn btn-primary" id="run-btn">Run Simulation</button>
+        </form>
+
+        <hr class="divider" />
+
+        <div class="backtest-row">
+          <label for="test_days">Backtest</label>
           <select id="test_days" class="inline-select">
             <option value="63">3 months</option>
             <option value="126">6 months</option>
             <option value="252" selected>1 year</option>
             <option value="504">2 years</option>
           </select>
-          <button class="btn btn-secondary" id="csv-btn" onclick="downloadCSV()" disabled>Download CSV</button>
+          <button type="button" class="btn btn-secondary" id="backtest-btn">Run Backtest</button>
         </div>
-      </div>
+      </section>
 
-      <div id="error-msg" class="hidden"></div>
+      <!-- Error -->
+      <div id="error-msg" class="error-msg hidden" role="alert"></div>
 
-      <div class="card hidden" id="loading-card">
+      <!-- Loading -->
+      <div id="loading-card" class="card hidden" role="status">
         <div class="loading-wrap">
-          <div class="spinner"></div>
-          <span>Fetching data and running the model...</span>
+          <div class="spinner" aria-hidden="true"></div>
+          <span class="loading-text">Running simulation&hellip;</span>
         </div>
       </div>
 
-      <div class="card hidden" id="results-card">
+      <!-- Empty state -->
+      <div id="empty-state" class="card empty-state">
+        <p>Configure the parameters above and press <strong>Run Simulation</strong> to forecast price paths for any stock.</p>
+      </div>
+
+      <!-- Simulation Results -->
+      <section id="results-card" class="card hidden" aria-live="polite">
         <div class="section-head">
-          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <div class="title-row">
             <h2 id="chart-title">Forecast</h2>
-            <span id="model-badge" class="model-badge">Idle</span>
+            <span id="model-badge" class="model-badge">&mdash;</span>
           </div>
-          <span id="chart-subtitle" class="section-meta">Run a simulation to view percentile bands and scenarios.</span>
+          <span id="chart-subtitle" class="section-meta"></span>
         </div>
 
         <div id="chart"></div>
 
         <div class="stats-grid">
           <div class="stat-card">
-            <div class="stat-label">Current Price</div>
-            <div class="stat-value" id="stat-current">-</div>
+            <div class="stat-label" title="The last closing price of the stock">Current Price</div>
+            <div class="stat-value" id="stat-current">&mdash;</div>
           </div>
           <div class="stat-card">
-            <div class="stat-label">Median Forecast</div>
-            <div class="stat-value" id="stat-median">-</div>
+            <div class="stat-label" title="The middle forecast — half of simulations end above, half below">Median Forecast</div>
+            <div class="stat-value" id="stat-median">&mdash;</div>
           </div>
           <div class="stat-card">
-            <div class="stat-label">Bear (5th pct)</div>
-            <div class="stat-value" id="stat-p5">-</div>
+            <div class="stat-label" title="Pessimistic scenario — only 5% of simulations ended below this price">Bear Case (5th pct)</div>
+            <div class="stat-value" id="stat-p5">&mdash;</div>
           </div>
           <div class="stat-card">
-            <div class="stat-label">Bull (95th pct)</div>
-            <div class="stat-value" id="stat-p95">-</div>
+            <div class="stat-label" title="Optimistic scenario — only 5% of simulations ended above this price">Bull Case (95th pct)</div>
+            <div class="stat-value" id="stat-p95">&mdash;</div>
           </div>
           <div class="stat-card">
-            <div class="stat-label">Prob. of Gain</div>
-            <div class="stat-value" id="stat-prob">-</div>
+            <div class="stat-label" title="Percentage of simulated paths that ended above today's price">Prob. of Gain</div>
+            <div class="stat-value" id="stat-prob">&mdash;</div>
           </div>
           <div class="stat-card">
-            <div class="stat-label">Annual Volatility</div>
-            <div class="stat-value" id="stat-vol">-</div>
+            <div class="stat-label" title="Annualized standard deviation — higher means more price uncertainty">Annual Volatility</div>
+            <div class="stat-value" id="stat-vol">&mdash;</div>
           </div>
           <div class="stat-card">
-            <div class="stat-label">1-Day 95% VaR</div>
-            <div class="stat-value" id="stat-var">-</div>
+            <div class="stat-label" title="Value at Risk: the maximum expected single-day loss with 95% confidence, based on historical returns">1-Day 95% VaR</div>
+            <div class="stat-value" id="stat-var">&mdash;</div>
           </div>
           <div class="stat-card">
-            <div class="stat-label">Calibration</div>
-            <div class="stat-value" id="stat-calib">-</div>
+            <div class="stat-label" title="Sigma multiplier for confidence bands — 1.00x is perfectly calibrated, above means bands were widened">Calibration</div>
+            <div class="stat-value" id="stat-calib">&mdash;</div>
           </div>
         </div>
 
-        <p class="disclaimer">Simulation uses GARCH(1,1) with Student-t innovations when enough data exists and falls back to GBM when it does not. Educational use only, not investment advice.</p>
-      </div>
+        <div class="results-actions">
+          <button type="button" class="btn btn-secondary" id="csv-btn" disabled>Download CSV</button>
+        </div>
 
-      <div class="card hidden" id="backtest-card">
+        <p class="disclaimer">Uses GARCH(1,1) with Student-t innovations when enough data exists; falls back to geometric Brownian motion otherwise. For educational use only &mdash; not investment advice.</p>
+      </section>
+
+      <!-- Backtest Results -->
+      <section id="backtest-card" class="card hidden" aria-live="polite">
         <div class="section-head">
-          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <div class="title-row">
             <h2 id="bt-title">Backtest</h2>
-            <span id="bt-model-badge" class="model-badge">Idle</span>
+            <span id="bt-model-badge" class="model-badge">&mdash;</span>
           </div>
-          <span id="bt-meta" class="section-meta">Coverage diagnostics will appear here after a run.</span>
+          <span id="bt-meta" class="section-meta"></span>
         </div>
 
         <div id="backtest-chart"></div>
 
         <div class="stats-grid">
           <div class="stat-card">
-            <div class="stat-label">90% Band Coverage</div>
-            <div class="stat-value" id="bt-cov90">-</div>
+            <div class="stat-label" title="What fraction of actual prices fell inside the 90% confidence band — target is 90%">90% Band Coverage</div>
+            <div class="stat-value" id="bt-cov90">&mdash;</div>
           </div>
           <div class="stat-card">
-            <div class="stat-label">50% Band Coverage</div>
-            <div class="stat-value" id="bt-cov50">-</div>
+            <div class="stat-label" title="What fraction of actual prices fell inside the 50% confidence band — target is 50%">50% Band Coverage</div>
+            <div class="stat-value" id="bt-cov50">&mdash;</div>
           </div>
           <div class="stat-card">
-            <div class="stat-label">Calibration</div>
-            <div class="stat-value" id="bt-calibration">-</div>
+            <div class="stat-label" title="Overall assessment — a well-calibrated model's coverage should be close to target band widths">Calibration</div>
+            <div class="stat-value" id="bt-calibration">&mdash;</div>
           </div>
         </div>
 
-        <p class="disclaimer">A well-calibrated model should land close to each target coverage band. Under-coverage means your forecast range is too narrow; over-coverage means it is too wide.</p>
-      </div>
+        <p class="disclaimer">A well-calibrated model should land close to each target coverage band. Under-coverage means the forecast range is too narrow; over-coverage means it is too wide.</p>
+      </section>
 
-      <div class="card">
-        <button class="code-toggle-btn" id="code-toggle-btn" onclick="toggleCode()">
-          <span>View Python Code</span>
-          <span class="chevron">⌄</span>
+      <!-- Code viewer -->
+      <div class="card card--muted">
+        <button type="button" class="code-toggle-btn" id="code-toggle-btn">
+          <span>View Python Source</span>
+          <span class="chevron">&#8964;</span>
         </button>
 
         <div class="code-panel hidden" id="code-panel">
           <div class="code-header">
             <span>api/simulate.py</span>
-            <button class="copy-btn" id="copy-btn" onclick="copyCode()">Copy</button>
+            <button type="button" class="copy-btn" id="copy-btn">Copy</button>
           </div>
           <pre><code class="language-python" id="code-content"></code></pre>
         </div>
@@ -712,46 +746,112 @@
   </div>
 
   <script>
-    let lastCsvData = null;
-    let lastTicker = null;
+    /* ── State ─────────────────────────────────────────────────────────────── */
+    var lastCsvData = null;
+    var lastTicker = null;
 
-    document.getElementById("simulations").addEventListener("input", function () {
-      document.getElementById("sim-display").textContent = this.value;
-      document.getElementById("sim-val").textContent = this.value;
-    });
+    /* ── Chart color palette ──────────────────────────────────────────────── */
+    var C = {
+      path:       'rgba(37, 99, 235, 0.07)',
+      bear:       '#dc2626',
+      bull:       '#6366f1',
+      median:     '#2563eb',
+      bandFill:   'rgba(37, 99, 235, 0.05)',
+      spot:       'rgba(217, 119, 6, 0.7)',
+      spotLabel:  '#92400e',
+      grid:       'rgba(0, 0, 0, 0.05)',
+      tick:       '#9ca3af',
+      legend:     '#4b5563',
+      font:       'Inter, -apple-system, sans-serif',
+      actual:     '#111827',
+      bt90border: 'rgba(220, 38, 38, 0.18)',
+      bt90fill:   'rgba(220, 38, 38, 0.05)',
+      bt50border: 'rgba(37, 99, 235, 0.18)',
+      bt50fill:   'rgba(37, 99, 235, 0.06)',
+    };
 
+    /* ── Helpers ───────────────────────────────────────────────────────────── */
     function lookbackToDays(value) {
-      const map = { "6mo": 126, "1y": 252, "2y": 504, "5y": 1260, "10y": 2520 };
+      var map = { '6mo': 126, '1y': 252, '2y': 504, '5y': 1260, '10y': 2520 };
       return map[value] || 252;
     }
 
-    async function runSimulation() {
-      const ticker = document.getElementById("ticker").value.trim().toUpperCase();
-      const lookback = document.getElementById("lookback").value;
-      const simulations = parseInt(document.getElementById("simulations").value, 10);
-      const forecast_days = parseInt(document.getElementById("forecast_days").value, 10);
+    function setText(id, val) {
+      document.getElementById(id).textContent = val;
+    }
 
-      if (!ticker) {
-        showError("Please enter a stock ticker symbol.");
+    function showError(msg) {
+      var el = document.getElementById('error-msg');
+      el.textContent = msg;
+      el.classList.remove('hidden');
+    }
+
+    function hideError() {
+      document.getElementById('error-msg').classList.add('hidden');
+    }
+
+    function setLoading(on, message) {
+      var card = document.getElementById('loading-card');
+      card.classList.toggle('hidden', !on);
+      if (message) card.querySelector('.loading-text').textContent = message;
+      document.getElementById('run-btn').disabled = on;
+      document.getElementById('run-btn').textContent = on ? 'Running\u2026' : 'Run Simulation';
+    }
+
+    function setBtLoading(on) {
+      var card = document.getElementById('loading-card');
+      card.classList.toggle('hidden', !on);
+      if (on) card.querySelector('.loading-text').textContent = 'Running backtest\u2026';
+      document.getElementById('backtest-btn').disabled = on;
+      document.getElementById('backtest-btn').textContent = on ? 'Running\u2026' : 'Run Backtest';
+    }
+
+    /* ── Event binding ────────────────────────────────────────────────────── */
+    document.getElementById('simulations').addEventListener('input', function () {
+      document.getElementById('sim-val').textContent = this.value;
+    });
+
+    document.getElementById('sim-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      runSimulation();
+    });
+
+    document.getElementById('backtest-btn').addEventListener('click', runBacktest);
+    document.getElementById('csv-btn').addEventListener('click', downloadCSV);
+    document.getElementById('code-toggle-btn').addEventListener('click', toggleCode);
+    document.getElementById('copy-btn').addEventListener('click', copyCode);
+
+    /* ── Simulation ───────────────────────────────────────────────────────── */
+    async function runSimulation() {
+      var ticker = document.getElementById('ticker').value.trim().toUpperCase();
+      var lookback = document.getElementById('lookback').value;
+      var simulations = parseInt(document.getElementById('simulations').value, 10);
+      var forecast_days = parseInt(document.getElementById('forecast_days').value, 10);
+
+      if (!ticker) { showError('Please enter a stock ticker symbol.'); return; }
+
+      if (typeof Plotly === 'undefined') {
+        showError('Charts are still loading. Please wait a moment and try again.');
         return;
       }
 
       hideError();
-      setLoading(true);
-      document.getElementById("results-card").classList.add("hidden");
-      document.getElementById("csv-btn").disabled = true;
+      setLoading(true, 'Fetching data and running simulation\u2026');
+      document.getElementById('results-card').classList.add('hidden');
+      document.getElementById('empty-state').classList.add('hidden');
+      document.getElementById('csv-btn').disabled = true;
 
       try {
-        const res = await fetch("/api/simulate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ticker, lookback, simulations, forecast_days }),
+        var res = await fetch('/api/simulate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ticker: ticker, lookback: lookback, simulations: simulations, forecast_days: forecast_days }),
         });
 
-        const data = await res.json();
+        var data = await res.json();
 
         if (!res.ok || data.error) {
-          showError(data.error || "An unexpected error occurred. Please try again.");
+          showError(data.error || 'An unexpected error occurred. Please try again.');
           return;
         }
 
@@ -761,296 +861,614 @@
         renderChart(data);
         renderStats(data);
 
-        document.getElementById("results-card").classList.remove("hidden");
-        document.getElementById("csv-btn").disabled = false;
+        var resultsCard = document.getElementById('results-card');
+        resultsCard.classList.remove('hidden');
+        resultsCard.classList.add('card-reveal');
+        resultsCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document.getElementById('csv-btn').disabled = false;
+        setTimeout(function () { resultsCard.classList.remove('card-reveal'); }, 400);
       } catch (err) {
-        showError("Network error: " + err.message);
+        showError('Network error \u2014 check your connection and try again.');
       } finally {
         setLoading(false);
       }
     }
 
+    /* ── Chart rendering ──────────────────────────────────────────────────── */
     function renderChart(data) {
-      const { ticker, dates, paths, percentile_5, percentile_50, percentile_95, current_price, stats } = data;
-      const traces = [];
+      var ticker = data.ticker, dates = data.dates, paths = data.paths;
+      var percentile_5 = data.percentile_5, percentile_50 = data.percentile_50, percentile_95 = data.percentile_95;
+      var current_price = data.current_price, stats = data.stats;
+      var traces = [];
 
-      paths.forEach((path) => {
+      paths.forEach(function (path) {
         traces.push({
-          x: dates,
-          y: path,
-          type: "scatter",
-          mode: "lines",
-          line: { color: "rgba(185, 207, 255, 0.13)", width: 1 },
-          showlegend: false,
-          hoverinfo: "skip",
+          x: dates, y: path, type: 'scatter', mode: 'lines',
+          line: { color: C.path, width: 1 },
+          showlegend: false, hoverinfo: 'skip',
         });
       });
 
       traces.push({
-        x: dates,
-        y: percentile_5,
-        name: "Bear",
-        type: "scatter",
-        mode: "lines",
-        line: { color: "#ff6f91", dash: "dot", width: 2 },
-        hovertemplate: "<b>5th pct</b>: $%{y:.2f}<extra></extra>",
+        x: dates, y: percentile_5, name: 'Bear (5th)',
+        type: 'scatter', mode: 'lines',
+        line: { color: C.bear, dash: 'dot', width: 1.5 },
+        hovertemplate: '<b>5th pct</b>: $%{y:.2f}<extra></extra>',
       });
 
       traces.push({
-        x: dates,
-        y: percentile_95,
-        name: "Bull",
-        type: "scatter",
-        mode: "lines",
-        line: { color: "#81ddff", dash: "dot", width: 2 },
-        fill: "tonexty",
-        fillcolor: "rgba(129, 221, 255, 0.08)",
-        hovertemplate: "<b>95th pct</b>: $%{y:.2f}<extra></extra>",
+        x: dates, y: percentile_95, name: 'Bull (95th)',
+        type: 'scatter', mode: 'lines',
+        line: { color: C.bull, dash: 'dot', width: 1.5 },
+        fill: 'tonexty', fillcolor: C.bandFill,
+        hovertemplate: '<b>95th pct</b>: $%{y:.2f}<extra></extra>',
       });
 
       traces.push({
-        x: dates,
-        y: percentile_50,
-        name: "Median",
-        type: "scatter",
-        mode: "lines",
-        line: { color: "#4d76ff", width: 3 },
-        hovertemplate: "<b>Median</b>: $%{y:.2f}<extra></extra>",
+        x: dates, y: percentile_50, name: 'Median',
+        type: 'scatter', mode: 'lines',
+        line: { color: C.median, width: 2.5 },
+        hovertemplate: '<b>Median</b>: $%{y:.2f}<extra></extra>',
       });
 
-      const forecastLabel = document.getElementById("forecast_days").selectedOptions[0].text;
-      const lookbackLabel = document.getElementById("lookback").selectedOptions[0].text;
-      const fittedDays = lookbackToDays(document.getElementById("lookback").value);
+      var forecastLabel = document.getElementById('forecast_days').selectedOptions[0].text;
+      var lookbackLabel = document.getElementById('lookback').selectedOptions[0].text;
+      var fittedDays = lookbackToDays(document.getElementById('lookback').value);
 
-      document.getElementById("chart-title").textContent = `${ticker} Forecast`;
-      document.getElementById("chart-subtitle").textContent = `${lookbackLabel} lookback, ${forecastLabel} forecast, calibrated over about ${fittedDays} trading days.`;
+      document.getElementById('chart-title').textContent = ticker + ' Forecast';
+      document.getElementById('chart-subtitle').textContent =
+        lookbackLabel + ' lookback \u00b7 ' + forecastLabel + ' forecast \u00b7 ~' + fittedDays + ' trading days';
 
-      const layout = {
-        margin: { t: 20, r: 18, b: 48, l: 56 },
-        paper_bgcolor: "rgba(0,0,0,0)",
-        plot_bgcolor: "rgba(255,255,255,0.02)",
-        hovermode: "x unified",
-        font: { color: "#dfe4ff", family: "Plus Jakarta Sans, sans-serif" },
-        xaxis: {
-          showgrid: true,
-          gridcolor: "rgba(160, 183, 255, 0.08)",
-          tickfont: { size: 10, color: "#96a2d8" },
-          zeroline: false,
-        },
-        yaxis: {
-          showgrid: true,
-          gridcolor: "rgba(160, 183, 255, 0.08)",
-          tickfont: { size: 10, color: "#96a2d8" },
-          tickprefix: "$",
-          zeroline: false,
-        },
-        legend: {
-          orientation: "h",
-          y: -0.16,
-          x: 0.5,
-          xanchor: "center",
-          font: { size: 10, color: "#c9d4ff" },
-        },
+      var layout = {
+        margin: { t: 16, r: 16, b: 44, l: 56 },
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        hovermode: 'x unified',
+        font: { color: C.tick, family: C.font, size: 12 },
+        xaxis: { showgrid: true, gridcolor: C.grid, tickfont: { size: 10, color: C.tick }, zeroline: false },
+        yaxis: { showgrid: true, gridcolor: C.grid, tickfont: { size: 10, color: C.tick }, tickprefix: '$', zeroline: false },
+        legend: { orientation: 'h', y: -0.15, x: 0.5, xanchor: 'center', font: { size: 10, color: C.legend } },
         shapes: [{
-          type: "line",
-          x0: dates[0],
-          x1: dates[dates.length - 1],
-          y0: current_price,
-          y1: current_price,
-          line: { color: "rgba(255,191,102,0.9)", dash: "dash", width: 1.3 },
+          type: 'line', x0: dates[0], x1: dates[dates.length - 1],
+          y0: current_price, y1: current_price,
+          line: { color: C.spot, dash: 'dash', width: 1.2 },
         }],
         annotations: [{
-          x: dates[Math.min(4, dates.length - 1)],
-          y: current_price,
-          text: `Spot $${current_price.toFixed(2)}`,
-          showarrow: false,
-          yshift: 12,
-          font: { size: 10, color: "#ffd59a" },
+          x: dates[Math.min(4, dates.length - 1)], y: current_price,
+          text: 'Spot $' + current_price.toFixed(2),
+          showarrow: false, yshift: 12,
+          font: { size: 10, color: C.spotLabel },
         }],
       };
 
-      Plotly.newPlot("chart", traces, layout, { responsive: true, displayModeBar: false });
-      document.getElementById("model-badge").textContent = stats.model || "GBM";
+      Plotly.newPlot('chart', traces, layout, { responsive: true, displayModeBar: false });
+      document.getElementById('model-badge').textContent = stats.model || 'GBM';
     }
 
+    /* ── Stats rendering ──────────────────────────────────────────────────── */
     function renderStats(data) {
-      const s = data.stats;
-      const cp = data.current_price;
-      const medianUp = s.median_final >= cp;
+      var s = data.stats;
+      var cp = data.current_price;
+      var medianUp = s.median_final >= cp;
 
-      setText("stat-current", `$${cp.toFixed(2)}`);
-      setHTML("stat-median", `$${s.median_final.toFixed(2)} <span class="${medianUp ? "up" : "down"}">${medianUp ? "▲" : "▼"}</span>`);
-      setText("stat-p5", `$${s.p5_final.toFixed(2)}`);
-      setText("stat-p95", `$${s.p95_final.toFixed(2)}`);
-      setText("stat-prob", `${(s.prob_gain * 100).toFixed(1)}%`);
-      setText("stat-vol", `${(s.annual_vol * 100).toFixed(1)}%`);
-      setText("stat-var", `${(s.var_95_1day * 100).toFixed(2)}%`);
+      setText('stat-current', '$' + cp.toFixed(2));
 
-      const calibEl = document.getElementById("stat-calib");
+      var medianEl = document.getElementById('stat-median');
+      medianEl.textContent = '';
+      medianEl.appendChild(document.createTextNode('$' + s.median_final.toFixed(2) + ' '));
+      var arrow = document.createElement('span');
+      arrow.className = medianUp ? 'val-up' : 'val-down';
+      arrow.textContent = medianUp ? '\u25B2' : '\u25BC';
+      arrow.setAttribute('aria-label', medianUp ? 'up from current price' : 'down from current price');
+      medianEl.appendChild(arrow);
+
+      setText('stat-p5', '$' + s.p5_final.toFixed(2));
+      setText('stat-p95', '$' + s.p95_final.toFixed(2));
+      setText('stat-prob', (s.prob_gain * 100).toFixed(1) + '%');
+      setText('stat-vol', (s.annual_vol * 100).toFixed(1) + '%');
+      setText('stat-var', (s.var_95_1day * 100).toFixed(2) + '%');
+
+      var calibEl = document.getElementById('stat-calib');
       if (s.calib_k != null) {
-        calibEl.textContent = `${s.calib_k.toFixed(2)}x`;
-        calibEl.className = "stat-value " + (Math.abs(s.calib_k - 1) < 0.05 ? "" : (s.calib_k > 1 ? "down" : "up"));
+        var calibOk = Math.abs(s.calib_k - 1) < 0.05;
+        calibEl.textContent = s.calib_k.toFixed(2) + 'x';
+        if (!calibOk) {
+          calibEl.textContent += s.calib_k > 1 ? ' (widened)' : ' (narrowed)';
+          calibEl.className = 'stat-value ' + (s.calib_k > 1 ? 'val-down' : 'val-up');
+        } else {
+          calibEl.className = 'stat-value';
+        }
       } else {
-        calibEl.textContent = "1.00x";
-        calibEl.className = "stat-value";
+        calibEl.textContent = '1.00x';
+        calibEl.className = 'stat-value';
       }
     }
 
-    function setText(id, val) {
-      document.getElementById(id).textContent = val;
-    }
-
-    function setHTML(id, val) {
-      document.getElementById(id).innerHTML = val;
-    }
-
+    /* ── Backtest ──────────────────────────────────────────────────────────── */
     async function runBacktest() {
-      const ticker = document.getElementById("ticker").value.trim().toUpperCase();
-      const simulations = parseInt(document.getElementById("simulations").value, 10);
-      const test_days = parseInt(document.getElementById("test_days").value, 10);
+      var ticker = document.getElementById('ticker').value.trim().toUpperCase();
+      var simulations = parseInt(document.getElementById('simulations').value, 10);
+      var test_days = parseInt(document.getElementById('test_days').value, 10);
 
-      if (!ticker) {
-        showError("Please enter a stock ticker symbol.");
+      if (!ticker) { showError('Please enter a stock ticker symbol.'); return; }
+
+      if (typeof Plotly === 'undefined') {
+        showError('Charts are still loading. Please wait a moment and try again.');
         return;
       }
 
       hideError();
       setBtLoading(true);
-      document.getElementById("backtest-card").classList.add("hidden");
+      document.getElementById('backtest-card').classList.add('hidden');
+      document.getElementById('empty-state').classList.add('hidden');
 
       try {
-        const res = await fetch("/api/backtest", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ticker, simulations, test_days }),
+        var res = await fetch('/api/backtest', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ticker: ticker, simulations: simulations, test_days: test_days }),
         });
 
-        const data = await res.json();
+        var data = await res.json();
         if (!res.ok || data.error) {
-          showError(data.error || "Backtest failed.");
+          showError(data.error || 'Backtest failed. Please try again.');
           return;
         }
 
         renderBacktestChart(data);
-        document.getElementById("backtest-card").classList.remove("hidden");
-        document.getElementById("backtest-card").scrollIntoView({ behavior: "smooth", block: "start" });
+        var btCard = document.getElementById('backtest-card');
+        btCard.classList.remove('hidden');
+        btCard.classList.add('card-reveal');
+        btCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setTimeout(function () { btCard.classList.remove('card-reveal'); }, 400);
       } catch (err) {
-        showError("Network error: " + err.message);
+        showError('Network error \u2014 check your connection and try again.');
       } finally {
         setBtLoading(false);
       }
     }
 
     function renderBacktestChart(data) {
-      const { ticker, model, dates, actual, percentile_5, percentile_25, percentile_50, percentile_75, percentile_95, coverage } = data;
+      var ticker = data.ticker, model = data.model, dates = data.dates, actual = data.actual;
+      var percentile_5 = data.percentile_5, percentile_25 = data.percentile_25;
+      var percentile_50 = data.percentile_50, percentile_75 = data.percentile_75;
+      var percentile_95 = data.percentile_95, coverage = data.coverage;
 
-      const traces = [
-        { x: dates, y: percentile_5, type: "scatter", mode: "lines", line: { color: "rgba(255,111,145,0.22)", width: 1 }, showlegend: false, hoverinfo: "skip" },
-        { x: dates, y: percentile_95, name: "90% Band", type: "scatter", mode: "lines", line: { color: "rgba(255,111,145,0.24)", width: 1 }, fill: "tonexty", fillcolor: "rgba(255,111,145,0.08)", hoverinfo: "skip" },
-        { x: dates, y: percentile_25, type: "scatter", mode: "lines", line: { color: "rgba(129,221,255,0.22)", width: 1 }, showlegend: false, hoverinfo: "skip" },
-        { x: dates, y: percentile_75, name: "50% Band", type: "scatter", mode: "lines", line: { color: "rgba(129,221,255,0.22)", width: 1 }, fill: "tonexty", fillcolor: "rgba(129,221,255,0.1)", hoverinfo: "skip" },
-        { x: dates, y: percentile_50, name: "Median", type: "scatter", mode: "lines", line: { color: "#4d76ff", dash: "dash", width: 2.4 }, hovertemplate: "<b>Median</b>: $%{y:.2f}<extra></extra>" },
-        { x: dates, y: actual, name: "Actual", type: "scatter", mode: "lines", line: { color: "#ffffff", width: 2.5 }, hovertemplate: "<b>Actual</b>: $%{y:.2f}<extra></extra>" },
+      var traces = [
+        { x: dates, y: percentile_5, type: 'scatter', mode: 'lines', line: { color: C.bt90border, width: 1 }, showlegend: false, hoverinfo: 'skip' },
+        { x: dates, y: percentile_95, name: '90% Band', type: 'scatter', mode: 'lines', line: { color: C.bt90border, width: 1 }, fill: 'tonexty', fillcolor: C.bt90fill, hoverinfo: 'skip' },
+        { x: dates, y: percentile_25, type: 'scatter', mode: 'lines', line: { color: C.bt50border, width: 1 }, showlegend: false, hoverinfo: 'skip' },
+        { x: dates, y: percentile_75, name: '50% Band', type: 'scatter', mode: 'lines', line: { color: C.bt50border, width: 1 }, fill: 'tonexty', fillcolor: C.bt50fill, hoverinfo: 'skip' },
+        { x: dates, y: percentile_50, name: 'Median', type: 'scatter', mode: 'lines', line: { color: C.median, dash: 'dash', width: 2 }, hovertemplate: '<b>Median</b>: $%{y:.2f}<extra></extra>' },
+        { x: dates, y: actual, name: 'Actual', type: 'scatter', mode: 'lines', line: { color: C.actual, width: 2.5 }, hovertemplate: '<b>Actual</b>: $%{y:.2f}<extra></extra>' },
       ];
 
-      const layout = {
-        margin: { t: 20, r: 18, b: 48, l: 56 },
-        paper_bgcolor: "rgba(0,0,0,0)",
-        plot_bgcolor: "rgba(255,255,255,0.02)",
-        hovermode: "x unified",
-        font: { color: "#dfe4ff", family: "Plus Jakarta Sans, sans-serif" },
-        xaxis: { showgrid: true, gridcolor: "rgba(160, 183, 255, 0.08)", tickfont: { size: 10, color: "#96a2d8" }, zeroline: false },
-        yaxis: { showgrid: true, gridcolor: "rgba(160, 183, 255, 0.08)", tickfont: { size: 10, color: "#96a2d8" }, tickprefix: "$", zeroline: false },
-        legend: { orientation: "h", y: -0.16, x: 0.5, xanchor: "center", font: { size: 10, color: "#c9d4ff" } },
+      var layout = {
+        margin: { t: 16, r: 16, b: 44, l: 56 },
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        hovermode: 'x unified',
+        font: { color: C.tick, family: C.font, size: 12 },
+        xaxis: { showgrid: true, gridcolor: C.grid, tickfont: { size: 10, color: C.tick }, zeroline: false },
+        yaxis: { showgrid: true, gridcolor: C.grid, tickfont: { size: 10, color: C.tick }, tickprefix: '$', zeroline: false },
+        legend: { orientation: 'h', y: -0.15, x: 0.5, xanchor: 'center', font: { size: 10, color: C.legend } },
       };
 
-      Plotly.newPlot("backtest-chart", traces, layout, { responsive: true, displayModeBar: false });
+      Plotly.newPlot('backtest-chart', traces, layout, { responsive: true, displayModeBar: false });
 
-      document.getElementById("bt-title").textContent = `${ticker} Backtest`;
-      document.getElementById("bt-model-badge").textContent = model;
-      document.getElementById("bt-meta").textContent = `Test window ${document.getElementById("test_days").selectedOptions[0].text}, calibration factor ${data.calib_k?.toFixed(2) ?? "1.00"}x.`;
+      document.getElementById('bt-title').textContent = ticker + ' Backtest';
+      document.getElementById('bt-model-badge').textContent = model;
+      document.getElementById('bt-meta').textContent =
+        'Test window: ' + document.getElementById('test_days').selectedOptions[0].text +
+        ' \u00b7 Calibration factor: ' + (data.calib_k != null ? data.calib_k.toFixed(2) : '1.00') + 'x';
 
-      const cov90 = (coverage.band_90 * 100).toFixed(1);
-      const cov50 = (coverage.band_50 * 100).toFixed(1);
-      const good90 = Math.abs(coverage.band_90 - 0.90) <= 0.08;
-      const good50 = Math.abs(coverage.band_50 - 0.50) <= 0.10;
+      var cov90 = (coverage.band_90 * 100).toFixed(1);
+      var cov50 = (coverage.band_50 * 100).toFixed(1);
+      var good90 = Math.abs(coverage.band_90 - 0.90) <= 0.08;
+      var good50 = Math.abs(coverage.band_50 - 0.50) <= 0.10;
 
-      const el90 = document.getElementById("bt-cov90");
-      el90.textContent = `${cov90}%`;
-      el90.className = "stat-value " + (good90 ? "coverage-good" : "coverage-bad");
+      var el90 = document.getElementById('bt-cov90');
+      el90.textContent = cov90 + '%' + (good90 ? ' (on target)' : ' (off target)');
+      el90.className = 'stat-value ' + (good90 ? 'val-up' : 'val-down');
 
-      const el50 = document.getElementById("bt-cov50");
-      el50.textContent = `${cov50}%`;
-      el50.className = "stat-value " + (good50 ? "coverage-good" : "coverage-bad");
+      var el50 = document.getElementById('bt-cov50');
+      el50.textContent = cov50 + '%' + (good50 ? ' (on target)' : ' (off target)');
+      el50.className = 'stat-value ' + (good50 ? 'val-up' : 'val-down');
 
-      const calEl = document.getElementById("bt-calibration");
-      const bothGood = good90 && good50;
-      calEl.textContent = bothGood ? "Well calibrated" : "Needs review";
-      calEl.className = "stat-value " + (bothGood ? "coverage-good" : "coverage-bad");
+      var bothGood = good90 && good50;
+      var calEl = document.getElementById('bt-calibration');
+      calEl.textContent = bothGood ? 'Well calibrated' : 'Needs review';
+      calEl.className = 'stat-value ' + (bothGood ? 'val-up' : 'val-down');
     }
 
+    /* ── CSV Download ─────────────────────────────────────────────────────── */
     function downloadCSV() {
       if (!lastCsvData) return;
-      const blob = new Blob([lastCsvData], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
+      var blob = new Blob([lastCsvData], { type: 'text/csv;charset=utf-8;' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
       a.href = url;
-      a.download = `${lastTicker || "simulation"}_monte_carlo.csv`;
+      a.download = (lastTicker || 'simulation') + '_monte_carlo.csv';
       a.click();
       URL.revokeObjectURL(url);
     }
 
-    function toggleCode() {
-      const panel = document.getElementById("code-panel");
-      const btn = document.getElementById("code-toggle-btn");
-      const hidden = panel.classList.toggle("hidden");
-      btn.classList.toggle("open", !hidden);
+    /* ── Code viewer (lazy-loads highlight.js) ────────────────────────────── */
+    function loadHighlightJs() {
+      return new Promise(function (resolve) {
+        if (window.hljs) { resolve(); return; }
+        var link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css';
+        document.head.appendChild(link);
+        var script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js';
+        script.onload = function () {
+          var py = document.createElement('script');
+          py.src = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js';
+          py.onload = resolve;
+          document.head.appendChild(py);
+        };
+        document.head.appendChild(script);
+      });
+    }
 
-      if (!hidden && !document.getElementById("code-content").dataset.highlighted) {
-        document.getElementById("code-content").textContent = PYTHON_SOURCE;
-        hljs.highlightElement(document.getElementById("code-content"));
-        document.getElementById("code-content").dataset.highlighted = "yes";
+    function toggleCode() {
+      var panel = document.getElementById('code-panel');
+      var btn = document.getElementById('code-toggle-btn');
+      var hidden = panel.classList.toggle('hidden');
+      btn.classList.toggle('open', !hidden);
+
+      if (!hidden && !document.getElementById('code-content').dataset.highlighted) {
+        document.getElementById('code-content').textContent = PYTHON_SOURCE;
+        loadHighlightJs().then(function () {
+          if (window.hljs) {
+            hljs.highlightElement(document.getElementById('code-content'));
+          }
+          document.getElementById('code-content').dataset.highlighted = 'yes';
+        });
       }
     }
 
     async function copyCode() {
       try {
         await navigator.clipboard.writeText(PYTHON_SOURCE);
-        const btn = document.getElementById("copy-btn");
-        btn.textContent = "Copied!";
-        btn.classList.add("copied");
-        setTimeout(() => {
-          btn.textContent = "Copy";
-          btn.classList.remove("copied");
+        var btn = document.getElementById('copy-btn');
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(function () {
+          btn.textContent = 'Copy';
+          btn.classList.remove('copied');
         }, 2000);
-      } catch {
-        alert("Copy failed. Please select the code manually.");
+      } catch (e) {
+        alert('Copy failed \u2014 please select the code manually.');
       }
     }
 
-    function showError(msg) {
-      const el = document.getElementById("error-msg");
-      el.textContent = "Warning: " + msg;
-      el.classList.remove("hidden");
-    }
-
-    function hideError() {
-      document.getElementById("error-msg").classList.add("hidden");
-    }
-
-    function setLoading(on) {
-      document.getElementById("loading-card").classList.toggle("hidden", !on);
-      document.getElementById("run-btn").disabled = on;
-      document.getElementById("run-btn").textContent = on ? "Running..." : "Run Simulation";
-    }
-
-    function setBtLoading(on) {
-      document.getElementById("loading-card").classList.toggle("hidden", !on);
-      document.getElementById("backtest-btn").disabled = on;
-      document.getElementById("backtest-btn").textContent = on ? "Running..." : "Run Backtest";
-    }
-
-    const PYTHON_SOURCE = "from http.server import BaseHTTPRequestHandler\nimport json\nimport numpy as np\nimport pandas as pd\nimport yfinance as yf\n\nyf.set_tz_cache_location(\"/tmp\")\n\ntry:\n    from arch import arch_model as _arch_model\n    _ARCH = True\nexcept Exception:\n    _ARCH = False\n\n\n# \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n# Simulation engines\n# \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\ndef _garch_simulate(log_returns, current_price, n_sims, n_days):\n    \"\"\"GARCH(1,1) + Student-t innovations with drift shrinkage.\"\"\"\n    r   = log_returns * 100\n    mdl = _arch_model(r, mean='Constant', vol='GARCH', p=1, q=1, dist='t')\n    res = mdl.fit(disp='off', show_warning=False)\n\n    mu_pct = float(res.params['mu'])\n    omega  = float(res.params['omega'])\n    alpha  = float(res.params['alpha[1]'])\n    beta   = float(res.params['beta[1]'])\n    nu     = float(res.params['nu'])\n\n    # Drift shrinkage: mu is very noisy over short lookbacks.\n    # Shrink toward zero proportionally if t-statistic < 2.\n    try:\n        mu_se  = float(res.std_err['mu'])\n        t_stat = abs(mu_pct) / mu_se if mu_se > 0 else 0.0\n        mu_pct = mu_pct * min(1.0, t_stat / 2.0)\n    except Exception:\n        pass\n\n    sig2    = float(res.conditional_volatility[-1]) ** 2\n    sig2_v  = np.full(n_sims, sig2)\n    price_v = np.full(n_sims, float(current_price))\n    paths   = np.empty((n_sims, n_days + 1))\n    paths[:, 0] = current_price\n\n    std_scale = np.sqrt(nu / (nu - 2)) if nu > 2 else 1.0\n    for d in range(n_days):\n        z       = np.random.standard_t(nu, size=n_sims) / std_scale\n        shock   = np.sqrt(sig2_v) * z\n        ret     = (mu_pct + shock) / 100\n        price_v = price_v * np.exp(ret)\n        paths[:, d + 1] = price_v\n        sig2_v  = omega + alpha * shock ** 2 + beta * sig2_v\n\n    info = {\n        'model':        'GARCH(1,1)-t',\n        'annual_drift': round(mu_pct / 100 * 252, 4),\n        'annual_vol':   round(np.sqrt(sig2) / 100 * np.sqrt(252), 4),\n        'garch_alpha':  round(alpha, 4),\n        'garch_beta':   round(beta, 4),\n        't_df':         round(nu, 2),\n    }\n    return paths, info\n\n\ndef _gbm_simulate(log_returns, current_price, n_sims, n_days):\n    \"\"\"Plain GBM fallback with drift shrinkage.\"\"\"\n    mu    = float(log_returns.mean())\n    sigma = float(log_returns.std())\n\n    # Drift shrinkage\n    n      = len(log_returns)\n    mu_se  = sigma / np.sqrt(n) if n > 0 else 1.0\n    t_stat = abs(mu) / mu_se if mu_se > 0 else 0.0\n    mu     = mu * min(1.0, t_stat / 2.0)\n\n    drift = mu - 0.5 * sigma ** 2\n    Z     = np.random.normal(0, 1, (n_sims, n_days))\n    facts = np.exp(drift + sigma * Z)\n    paths = np.empty((n_sims, n_days + 1))\n    paths[:, 0] = current_price\n    for t in range(1, n_days + 1):\n        paths[:, t] = paths[:, t - 1] * facts[:, t - 1]\n\n    info = {\n        'model':        'GBM',\n        'annual_drift': round(mu * 252, 4),\n        'annual_vol':   round(sigma * np.sqrt(252), 4),\n    }\n    return paths, info\n\n\n# \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n# Walk-forward sigma calibration\n# \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\ndef _compute_calib_factor(close, n_sims=200):\n    \"\"\"\n    Find sigma multiplier k such that the 90% band achieves ~90% empirical coverage.\n\n    Method: hold out the last cal_len days of training data as a calibration window.\n    Simulate forward from the start of that window, measure coverage, then:\n        k = \u03a6\u207b\u00b9(0.95) / \u03a6\u207b\u00b9((1 + observed_coverage) / 2)\n\n    If bands are too narrow (coverage < 90%), k > 1 (widen them).\n    If bands are too wide (coverage > 90%), k < 1 (narrow them).\n    \"\"\"\n    cal_len = min(63, max(30, len(close) // 6))\n    if len(close) < cal_len + 100:\n        return 1.0\n\n    inner = close.iloc[:-cal_len]\n    cal   = close.iloc[-(cal_len + 1):]   # includes last inner price as day 0\n\n    lr_inner    = np.log(inner / inner.shift(1)).dropna().values\n    start_price = float(inner.iloc[-1])\n\n    if len(lr_inner) < 60:\n        return 1.0\n\n    # Use a fixed seed so calibration factor is deterministic for the same data\n    saved = np.random.get_state()\n    np.random.seed(0)\n    try:\n        if _ARCH and len(lr_inner) >= 100:\n            try:\n                paths, _ = _garch_simulate(lr_inner, start_price, n_sims, cal_len)\n            except Exception:\n                paths, _ = _gbm_simulate(lr_inner, start_price, n_sims, cal_len)\n        else:\n            paths, _ = _gbm_simulate(lr_inner, start_price, n_sims, cal_len)\n    except Exception:\n        np.random.set_state(saved)\n        return 1.0\n    np.random.set_state(saved)\n\n    actual = cal.values[1:]\n    p5     = np.percentile(paths[:, 1:],  5, axis=0)\n    p95    = np.percentile(paths[:, 1:], 95, axis=0)\n    cov    = float(np.mean((actual >= p5) & (actual <= p95)))\n\n    if cov <= 0.02 or cov >= 0.98:\n        return 1.0\n\n    k = float(_norm.ppf(0.95) / _norm.ppf((1.0 + cov) / 2.0))\n    return float(np.clip(k, 0.5, 3.0))\n\n\ndef _apply_calib(paths, k):\n    \"\"\"Scale the log-returns of every simulation path by factor k.\n    Equivalent to multiplying sigma by k without rerunning the simulation.\"\"\"\n    if abs(k - 1.0) < 0.02:\n        return paths\n    log_ret = np.log(paths / paths[:, 0:1])   # (n_sims, n_days+1)\n    return paths[:, 0:1] * np.exp(log_ret * k)\n\n\n# \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n# Handler\n# \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nclass handler(BaseHTTPRequestHandler):\n\n    def send_cors_headers(self):\n        self.send_header(\"Access-Control-Allow-Origin\", \"*\")\n        self.send_header(\"Access-Control-Allow-Methods\", \"POST, OPTIONS\")\n        self.send_header(\"Access-Control-Allow-Headers\", \"Content-Type\")\n\n    def do_OPTIONS(self):\n        self.send_response(200)\n        self.send_cors_headers()\n        self.end_headers()\n\n    def do_POST(self):\n        try:\n            content_length = int(self.headers.get(\"Content-Length\", 0))\n            body = self.rfile.read(content_length)\n            params = json.loads(body)\n\n            ticker        = params.get(\"ticker\", \"AAPL\").upper().strip()\n            lookback      = params.get(\"lookback\", \"2y\")\n            n_simulations = min(int(params.get(\"simulations\", 500)), 1000)\n            forecast_days = min(int(params.get(\"forecast_days\", 252)), 504)\n\n            # \u2500\u2500 1. Fetch historical data \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n            hist = yf.download(ticker, period=lookback, auto_adjust=True,\n                               progress=False, threads=False)\n            if hist.empty or len(hist) < 30:\n                self._send_error(400, f\"Ticker '{ticker}' not found or has insufficient history.\")\n                return\n            if isinstance(hist.columns, pd.MultiIndex):\n                hist.columns = hist.columns.get_level_values(0)\n\n            close         = hist[\"Close\"].dropna()\n            current_price = float(close.iloc[-1])\n            log_returns   = np.log(close / close.shift(1)).dropna().values\n\n            # \u2500\u2500 2. Simulate paths \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n            np.random.seed(None)\n            if _ARCH and len(log_returns) >= 100:\n                try:\n                    paths, model_info = _garch_simulate(\n                        log_returns, current_price, n_simulations, forecast_days)\n                except Exception:\n                    paths, model_info = _gbm_simulate(\n                        log_returns, current_price, n_simulations, forecast_days)\n            else:\n                paths, model_info = _gbm_simulate(\n                    log_returns, current_price, n_simulations, forecast_days)\n\n            # \u2500\u2500 4. Date index \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n            last_date    = hist.index[-1].to_pydatetime()\n            future_dates = pd.bdate_range(start=last_date, periods=forecast_days + 1)\n            dates        = [d.strftime(\"%Y-%m-%d\") for d in future_dates]\n\n            # \u2500\u2500 6. Percentile bands \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n            p5  = np.percentile(paths, 5,  axis=0).tolist()\n            p50 = np.percentile(paths, 50, axis=0).tolist()\n            p95 = np.percentile(paths, 95, axis=0).tolist()\n\n            # \u2500\u2500 7. Summary statistics \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n            final_prices = paths[:, -1]\n            var_95_1day  = float(np.percentile(log_returns, 5))\n\n            stats = {\n                'median_final': round(float(np.median(final_prices)), 2),\n                'p5_final':     round(float(np.percentile(final_prices, 5)), 2),\n                'p95_final':    round(float(np.percentile(final_prices, 95)), 2),\n                'prob_gain':    round(float(np.mean(final_prices > current_price)), 4),\n                'var_95_1day':  round(var_95_1day, 4),\n                **model_info,\n            }\n\n            # \u2500\u2500 8. Sample paths for chart \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n            n_display     = min(100, n_simulations)\n            idx           = np.random.choice(n_simulations, n_display, replace=False)\n            display_paths = paths[idx].tolist()\n\n            # \u2500\u2500 9. CSV \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n            header_row = \"date,\" + \",\".join(f\"sim_{i+1}\" for i in range(n_simulations))\n            rows = [header_row]\n            for t, date in enumerate(dates):\n                vals = \",\".join(f\"{paths[s, t]:.4f}\" for s in range(n_simulations))\n                rows.append(f\"{date},{vals}\")\n            csv_data = \"\\n\".join(rows)\n\n            response = {\n                \"ticker\":        ticker,\n                \"current_price\": round(current_price, 4),\n                \"forecast_days\": forecast_days,\n                \"dates\":         dates,\n                \"paths\":         display_paths,\n                \"percentile_5\":  p5,\n                \"percentile_50\": p50,\n                \"percentile_95\": p95,\n                \"stats\":         stats,\n                \"csv_data\":      csv_data,\n            }\n\n            body_bytes = json.dumps(response).encode(\"utf-8\")\n            self.send_response(200)\n            self.send_header(\"Content-Type\", \"application/json\")\n            self.send_header(\"Content-Length\", str(len(body_bytes)))\n            self.send_cors_headers()\n            self.end_headers()\n            self.wfile.write(body_bytes)\n\n        except Exception as e:\n            self._send_error(500, str(e))\n\n    def _send_error(self, code, message):\n        body = json.dumps({\"error\": message}).encode(\"utf-8\")\n        self.send_response(code)\n        self.send_header(\"Content-Type\", \"application/json\")\n        self.send_header(\"Content-Length\", str(len(body)))\n        self.send_cors_headers()\n        self.end_headers()\n        self.wfile.write(body)\n\n    def log_message(self, format, *args):\n        pass\n";
+    /* ── Python source (displayed in code viewer) ─────────────────────────── */
+    var PYTHON_SOURCE = [
+      'from http.server import BaseHTTPRequestHandler',
+      'import json',
+      'import numpy as np',
+      'import pandas as pd',
+      'import yfinance as yf',
+      '',
+      'yf.set_tz_cache_location("/tmp")',
+      '',
+      'try:',
+      '    from arch import arch_model as _arch_model',
+      '    _ARCH = True',
+      'except Exception:',
+      '    _ARCH = False',
+      '',
+      '',
+      '_TARGET_90 = 0.90',
+      '_TARGET_50 = 0.50',
+      '_TOL_90 = 0.08',
+      '_TOL_50 = 0.10',
+      '_K_MIN = 0.5',
+      '_K_MAX = 3.0',
+      '',
+      '',
+      '# \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500',
+      '# Simulation engines',
+      '# \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500',
+      '',
+      'def _garch_simulate(log_returns, current_price, n_sims, n_days):',
+      '    """GARCH(1,1) + Student-t innovations with drift shrinkage."""',
+      '    r   = log_returns * 100',
+      '    mdl = _arch_model(r, mean=\'Constant\', vol=\'GARCH\', p=1, q=1, dist=\'t\')',
+      '    res = mdl.fit(disp=\'off\', show_warning=False)',
+      '',
+      '    mu_pct = float(res.params[\'mu\'])',
+      '    omega  = float(res.params[\'omega\'])',
+      '    alpha  = float(res.params[\'alpha[1]\'])',
+      '    beta   = float(res.params[\'beta[1]\'])',
+      '    nu     = float(res.params[\'nu\'])',
+      '',
+      '    # Drift shrinkage: mu is very noisy over short lookbacks.',
+      '    # Shrink toward zero proportionally if t-statistic < 2.',
+      '    try:',
+      '        mu_se  = float(res.std_err[\'mu\'])',
+      '        t_stat = abs(mu_pct) / mu_se if mu_se > 0 else 0.0',
+      '        mu_pct = mu_pct * min(1.0, t_stat / 2.0)',
+      '    except Exception:',
+      '        pass',
+      '',
+      '    sig2    = float(res.conditional_volatility[-1]) ** 2',
+      '    sig2_v  = np.full(n_sims, sig2)',
+      '    price_v = np.full(n_sims, float(current_price))',
+      '    paths   = np.empty((n_sims, n_days + 1))',
+      '    paths[:, 0] = current_price',
+      '',
+      '    std_scale = np.sqrt(nu / (nu - 2)) if nu > 2 else 1.0',
+      '    for d in range(n_days):',
+      '        z       = np.random.standard_t(nu, size=n_sims) / std_scale',
+      '        shock   = np.sqrt(sig2_v) * z',
+      '        ret     = (mu_pct + shock) / 100',
+      '        price_v = price_v * np.exp(ret)',
+      '        paths[:, d + 1] = price_v',
+      '        sig2_v  = omega + alpha * shock ** 2 + beta * sig2_v',
+      '',
+      '    info = {',
+      '        \'model\':        \'GARCH(1,1)-t\',',
+      '        \'annual_drift\': round(mu_pct / 100 * 252, 4),',
+      '        \'annual_vol\':   round(np.sqrt(sig2) / 100 * np.sqrt(252), 4),',
+      '        \'garch_alpha\':  round(alpha, 4),',
+      '        \'garch_beta\':   round(beta, 4),',
+      '        \'t_df\':         round(nu, 2),',
+      '    }',
+      '    return paths, info',
+      '',
+      '',
+      'def _gbm_simulate(log_returns, current_price, n_sims, n_days):',
+      '    """Plain GBM fallback with drift shrinkage."""',
+      '    mu    = float(log_returns.mean())',
+      '    sigma = float(log_returns.std())',
+      '',
+      '    # Drift shrinkage',
+      '    n      = len(log_returns)',
+      '    mu_se  = sigma / np.sqrt(n) if n > 0 else 1.0',
+      '    t_stat = abs(mu) / mu_se if mu_se > 0 else 0.0',
+      '    mu     = mu * min(1.0, t_stat / 2.0)',
+      '',
+      '    drift = mu - 0.5 * sigma ** 2',
+      '    Z     = np.random.normal(0, 1, (n_sims, n_days))',
+      '    facts = np.exp(drift + sigma * Z)',
+      '    paths = np.empty((n_sims, n_days + 1))',
+      '    paths[:, 0] = current_price',
+      '    for t in range(1, n_days + 1):',
+      '        paths[:, t] = paths[:, t - 1] * facts[:, t - 1]',
+      '',
+      '    info = {',
+      '        \'model\':        \'GBM\',',
+      '        \'annual_drift\': round(mu * 252, 4),',
+      '        \'annual_vol\':   round(sigma * np.sqrt(252), 4),',
+      '    }',
+      '    return paths, info',
+      '',
+      '',
+      'def _coverage_stats(paths, actual):',
+      '    p5  = np.percentile(paths[:, 1:],  5, axis=0)',
+      '    p25 = np.percentile(paths[:, 1:], 25, axis=0)',
+      '    p75 = np.percentile(paths[:, 1:], 75, axis=0)',
+      '    p95 = np.percentile(paths[:, 1:], 95, axis=0)',
+      '    cov_90 = float(np.mean((actual >= p5)  & (actual <= p95)))',
+      '    cov_50 = float(np.mean((actual >= p25) & (actual <= p75)))',
+      '    return cov_90, cov_50',
+      '',
+      '',
+      'def _coverage_score(cov_90, cov_50, k):',
+      '    penalty_90 = max(0.0, abs(cov_90 - _TARGET_90) - _TOL_90)',
+      '    penalty_50 = max(0.0, abs(cov_50 - _TARGET_50) - _TOL_50)',
+      '    inside_bonus = 0.0 if (penalty_90 > 0.0 or penalty_50 > 0.0) else abs(k - 1.0) * 0.01',
+      '    return (',
+      '        penalty_90 * 100.0',
+      '        + penalty_50 * 100.0',
+      '        + abs(cov_90 - _TARGET_90)',
+      '        + abs(cov_50 - _TARGET_50)',
+      '        + inside_bonus',
+      '    )',
+      '',
+      '',
+      '# \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500',
+      '# Walk-forward sigma calibration',
+      '# \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500',
+      '',
+      'def _compute_calib_factor(close, n_sims=200):',
+      '    """',
+      '    Search for a volatility multiplier k that brings calibration-window',
+      '    coverage as close as possible to the acceptable 90% and 50% band targets.',
+      '    """',
+      '    cal_len = min(63, max(30, len(close) // 6))',
+      '    if len(close) < cal_len + 100:',
+      '        return 1.0',
+      '',
+      '    inner = close.iloc[:-cal_len]',
+      '    cal   = close.iloc[-(cal_len + 1):]   # includes last inner price as day 0',
+      '',
+      '    lr_inner    = np.log(inner / inner.shift(1)).dropna().values',
+      '    start_price = float(inner.iloc[-1])',
+      '',
+      '    if len(lr_inner) < 60:',
+      '        return 1.0',
+      '',
+      '    # Use a fixed seed so calibration factor is deterministic for the same data',
+      '    saved = np.random.get_state()',
+      '    np.random.seed(0)',
+      '    try:',
+      '        if _ARCH and len(lr_inner) >= 100:',
+      '            try:',
+      '                paths, _ = _garch_simulate(lr_inner, start_price, n_sims, cal_len)',
+      '            except Exception:',
+      '                paths, _ = _gbm_simulate(lr_inner, start_price, n_sims, cal_len)',
+      '        else:',
+      '            paths, _ = _gbm_simulate(lr_inner, start_price, n_sims, cal_len)',
+      '    except Exception:',
+      '        np.random.set_state(saved)',
+      '        return 1.0',
+      '    np.random.set_state(saved)',
+      '',
+      '    actual = cal.values[1:]',
+      '    best_k = 1.0',
+      '    best_score = float("inf")',
+      '',
+      '    candidates = np.linspace(_K_MIN, _K_MAX, 51)',
+      '    for _ in range(3):',
+      '      for k in candidates:',
+      '        scaled = _apply_calib(paths, float(k))',
+      '        cov_90, cov_50 = _coverage_stats(scaled, actual)',
+      '        score = _coverage_score(cov_90, cov_50, float(k))',
+      '        if score < best_score:',
+      '          best_score = score',
+      '          best_k = float(k)',
+      '',
+      '      step = float(candidates[1] - candidates[0]) if len(candidates) > 1 else 0.1',
+      '      lo = max(_K_MIN, best_k - 2.0 * step)',
+      '      hi = min(_K_MAX, best_k + 2.0 * step)',
+      '      candidates = np.linspace(lo, hi, 17)',
+      '',
+      '    return float(np.clip(best_k, _K_MIN, _K_MAX))',
+      '',
+      '',
+      'def _apply_calib(paths, k):',
+      '    """Scale the log-returns of every simulation path by factor k.',
+      '    Equivalent to multiplying sigma by k without rerunning the simulation."""',
+      '    if abs(k - 1.0) < 0.02:',
+      '        return paths',
+      '    log_ret = np.log(paths / paths[:, 0:1])   # (n_sims, n_days+1)',
+      '    return paths[:, 0:1] * np.exp(log_ret * k)',
+      '',
+      '',
+      '# \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500',
+      '# Handler',
+      '# \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500',
+      '',
+      'class handler(BaseHTTPRequestHandler):',
+      '',
+      '    def send_cors_headers(self):',
+      '        self.send_header("Access-Control-Allow-Origin", "*")',
+      '        self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")',
+      '        self.send_header("Access-Control-Allow-Headers", "Content-Type")',
+      '',
+      '    def do_OPTIONS(self):',
+      '        self.send_response(200)',
+      '        self.send_cors_headers()',
+      '        self.end_headers()',
+      '',
+      '    def do_POST(self):',
+      '        try:',
+      '            content_length = int(self.headers.get("Content-Length", 0))',
+      '            body = self.rfile.read(content_length)',
+      '            params = json.loads(body)',
+      '',
+      '            ticker        = params.get("ticker", "AAPL").upper().strip()',
+      '            lookback      = params.get("lookback", "2y")',
+      '            n_simulations = min(int(params.get("simulations", 500)), 1000)',
+      '            forecast_days = min(int(params.get("forecast_days", 252)), 504)',
+      '',
+      '            # \u2500\u2500 1. Fetch historical data \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500',
+      '            hist = yf.download(ticker, period=lookback, auto_adjust=True,',
+      '                               progress=False, threads=False)',
+      '            if hist.empty or len(hist) < 30:',
+      '                self._send_error(400, f"Ticker \'{ticker}\' not found or has insufficient history.")',
+      '                return',
+      '            if isinstance(hist.columns, pd.MultiIndex):',
+      '                hist.columns = hist.columns.get_level_values(0)',
+      '',
+      '            close         = hist["Close"].dropna()',
+      '            current_price = float(close.iloc[-1])',
+      '            log_returns   = np.log(close / close.shift(1)).dropna().values',
+      '',
+      '            # \u2500\u2500 2. Simulate paths \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500',
+      '            np.random.seed(None)',
+      '            if _ARCH and len(log_returns) >= 100:',
+      '                try:',
+      '                    paths, model_info = _garch_simulate(',
+      '                        log_returns, current_price, n_simulations, forecast_days)',
+      '                except Exception:',
+      '                    paths, model_info = _gbm_simulate(',
+      '                        log_returns, current_price, n_simulations, forecast_days)',
+      '            else:',
+      '                paths, model_info = _gbm_simulate(',
+      '                    log_returns, current_price, n_simulations, forecast_days)',
+      '',
+      '            calib_k = _compute_calib_factor(close)',
+      '            paths = _apply_calib(paths, calib_k)',
+      '            model_info[\'calib_k\'] = round(calib_k, 3)',
+      '',
+      '            # \u2500\u2500 4. Date index \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500',
+      '            last_date    = hist.index[-1].to_pydatetime()',
+      '            future_dates = pd.bdate_range(start=last_date, periods=forecast_days + 1)',
+      '            dates        = [d.strftime("%Y-%m-%d") for d in future_dates]',
+      '',
+      '            # \u2500\u2500 6. Percentile bands \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500',
+      '            p5  = np.percentile(paths, 5,  axis=0).tolist()',
+      '            p50 = np.percentile(paths, 50, axis=0).tolist()',
+      '            p95 = np.percentile(paths, 95, axis=0).tolist()',
+      '',
+      '            # \u2500\u2500 7. Summary statistics \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500',
+      '            final_prices = paths[:, -1]',
+      '            var_95_1day  = float(np.percentile(log_returns, 5))',
+      '',
+      '            stats = {',
+      '                \'median_final\': round(float(np.median(final_prices)), 2),',
+      '                \'p5_final\':     round(float(np.percentile(final_prices, 5)), 2),',
+      '                \'p95_final\':    round(float(np.percentile(final_prices, 95)), 2),',
+      '                \'prob_gain\':    round(float(np.mean(final_prices > current_price)), 4),',
+      '                \'var_95_1day\':  round(var_95_1day, 4),',
+      '                **model_info,',
+      '            }',
+      '',
+      '            # \u2500\u2500 8. Sample paths for chart \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500',
+      '            n_display     = min(100, n_simulations)',
+      '            idx           = np.random.choice(n_simulations, n_display, replace=False)',
+      '            display_paths = paths[idx].tolist()',
+      '',
+      '            # \u2500\u2500 9. CSV \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500',
+      '            header_row = "date," + ",".join(f"sim_{i+1}" for i in range(n_simulations))',
+      '            rows = [header_row]',
+      '            for t, date in enumerate(dates):',
+      '                vals = ",".join(f"{paths[s, t]:.4f}" for s in range(n_simulations))',
+      '                rows.append(f"{date},{vals}")',
+      '            csv_data = "\\n".join(rows)',
+      '',
+      '            response = {',
+      '                "ticker":        ticker,',
+      '                "current_price": round(current_price, 4),',
+      '                "forecast_days": forecast_days,',
+      '                "dates":         dates,',
+      '                "paths":         display_paths,',
+      '                "percentile_5":  p5,',
+      '                "percentile_50": p50,',
+      '                "percentile_95": p95,',
+      '                "stats":         stats,',
+      '                "csv_data":      csv_data,',
+      '            }',
+      '',
+      '            body_bytes = json.dumps(response).encode("utf-8")',
+      '            self.send_response(200)',
+      '            self.send_header("Content-Type", "application/json")',
+      '            self.send_header("Content-Length", str(len(body_bytes)))',
+      '            self.send_cors_headers()',
+      '            self.end_headers()',
+      '            self.wfile.write(body_bytes)',
+      '',
+      '        except Exception as e:',
+      '            self._send_error(500, str(e))',
+      '',
+      '    def _send_error(self, code, message):',
+      '        body = json.dumps({"error": message}).encode("utf-8")',
+      '        self.send_response(code)',
+      '        self.send_header("Content-Type", "application/json")',
+      '        self.send_header("Content-Length", str(len(body)))',
+      '        self.send_cors_headers()',
+      '        self.end_headers()',
+      '        self.wfile.write(body)',
+      '',
+      '    def log_message(self, format, *args):',
+      '        pass',
+    ].join('\n');
   </script>
 </body>
 </html>

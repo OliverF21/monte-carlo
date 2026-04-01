@@ -17,8 +17,9 @@ _TARGET_90 = 0.90
 _TARGET_50 = 0.50
 _TOL_90 = 0.08
 _TOL_50 = 0.10
-_K_MIN = 0.5
-_K_MAX = 3.0
+_K_MIN = 0.3
+_K_MAX = 4.0
+_N_CALIB_WINDOWS = 5
 
 
 def _garch_simulate(log_returns, current_price, n_sims, n_days):
@@ -69,6 +70,16 @@ def _gbm_simulate(log_returns, current_price, n_sims, n_days):
     return paths, 'GBM'
 
 
+def _simulate(log_returns, current_price, n_sims, n_days):
+    """Run GARCH if available, else GBM."""
+    if _ARCH and len(log_returns) >= 100:
+        try:
+            return _garch_simulate(log_returns, current_price, n_sims, n_days)
+        except Exception:
+            pass
+    return _gbm_simulate(log_returns, current_price, n_sims, n_days)
+
+
 def _coverage_stats(paths, actual):
     p5  = np.percentile(paths[:, 1:],  5, axis=0)
     p25 = np.percentile(paths[:, 1:], 25, axis=0)
@@ -92,50 +103,168 @@ def _coverage_score(cov_90, cov_50, k):
     )
 
 
-def _compute_calib_factor(close, n_sims=200):
-    cal_len = min(63, max(30, len(close) // 6))
-    if len(close) < cal_len + 100:
-        return 1.0
-    inner = close.iloc[:-cal_len]
-    cal   = close.iloc[-(cal_len + 1):]
-    lr    = np.log(inner / inner.shift(1)).dropna().values
-    start = float(inner.iloc[-1])
-    if len(lr) < 60:
-        return 1.0
-    saved = np.random.get_state()
-    np.random.seed(0)
-    try:
-        if _ARCH and len(lr) >= 100:
-            try:
-                paths, _ = _garch_simulate(lr, start, n_sims, cal_len)
-            except Exception:
-                paths, _ = _gbm_simulate(lr, start, n_sims, cal_len)
-        else:
-            paths, _ = _gbm_simulate(lr, start, n_sims, cal_len)
-    except Exception:
-        np.random.set_state(saved)
-        return 1.0
-    np.random.set_state(saved)
-    actual = cal.values[1:]
+def _is_converged(cov_90, cov_50):
+    return abs(cov_90 - _TARGET_90) <= _TOL_90 and abs(cov_50 - _TARGET_50) <= _TOL_50
+
+
+def _build_calib_windows(close, n_windows, cal_len):
+    """Create multiple walk-forward calibration windows across the training data.
+
+    Each window is a (train_slice, actual_values) pair.  Windows are spaced
+    evenly across the available data so the calibration factor generalises
+    across different market regimes rather than overfitting to one period.
+    """
+    windows = []
+    min_train = max(100, cal_len)          # need enough data to fit a model
+    usable    = len(close) - cal_len       # last possible train-end index
+    if usable < min_train:
+        return windows
+
+    # Space window end-points evenly from the earliest feasible point
+    # to the latest (end of the series minus cal_len).
+    starts = np.linspace(min_train, usable, n_windows, dtype=int)
+    for s in starts:
+        train_slice = close.iloc[:s]
+        actual_slice = close.iloc[s:s + cal_len].values
+        if len(actual_slice) == cal_len and len(train_slice) >= 60:
+            windows.append((train_slice, actual_slice))
+    return windows
+
+
+def _score_k_across_windows(windows, k, n_sims):
+    """Evaluate a candidate k across all calibration windows.
+
+    Returns the mean coverage score and mean coverage values.
+    """
+    total_score = 0.0
+    total_90 = 0.0
+    total_50 = 0.0
+    for train_slice, actual in windows:
+        lr    = np.log(train_slice / train_slice.shift(1)).dropna().values
+        start = float(train_slice.iloc[-1])
+        paths, _ = _simulate(lr, start, n_sims, len(actual))
+        scaled   = _apply_calib(paths, k)
+        cov_90, cov_50 = _coverage_stats(scaled, actual)
+        total_score += _coverage_score(cov_90, cov_50, k)
+        total_90 += cov_90
+        total_50 += cov_50
+    n = len(windows)
+    return total_score / n, total_90 / n, total_50 / n
+
+
+def _find_best_k(windows, n_sims=200):
+    """Grid search with iterative refinement for the best k across windows."""
     best_k = 1.0
     best_score = float("inf")
-
     candidates = np.linspace(_K_MIN, _K_MAX, 51)
+
     for _ in range(3):
         for k in candidates:
-            scaled = _apply_calib(paths, float(k))
-            cov_90, cov_50 = _coverage_stats(scaled, actual)
-            score = _coverage_score(cov_90, cov_50, float(k))
+            score, _, _ = _score_k_across_windows(windows, float(k), n_sims)
             if score < best_score:
                 best_score = score
                 best_k = float(k)
-
         step = float(candidates[1] - candidates[0]) if len(candidates) > 1 else 0.1
         lo = max(_K_MIN, best_k - 2.0 * step)
         hi = min(_K_MAX, best_k + 2.0 * step)
         candidates = np.linspace(lo, hi, 17)
 
-    return float(np.clip(best_k, _K_MIN, _K_MAX))
+    return float(np.clip(best_k, _K_MIN, _K_MAX)), best_score
+
+
+def _compute_calib_factor(close, n_sims=200):
+    """Iterative multi-window walk-forward calibration.
+
+    1. Try multiple lookback lengths (full data, 75%, 50%) to find the
+       training regime that best fits the asset.
+    2. For each lookback, build several walk-forward calibration windows
+       spread across the training data.
+    3. Grid-search for the k that minimises mean coverage error across
+       all windows — this prevents overfitting to one period.
+    4. Return the best (lookback, k) combination and iteration metadata.
+    """
+    cal_len = min(63, max(30, len(close) // 6))
+    if len(close) < cal_len + 100:
+        return 1.0, {"iterations": 0, "converged": False, "windows": 0,
+                      "lookback_pct": 100, "avg_cov_90": None, "avg_cov_50": None}
+
+    saved = np.random.get_state()
+    np.random.seed(0)
+
+    # Try multiple lookback fractions — shorter captures recent regime,
+    # longer captures more market cycles.
+    lookback_fractions = [1.0, 0.75, 0.50]
+    overall_best_k = 1.0
+    overall_best_score = float("inf")
+    overall_best_pct = 100
+    overall_best_cov90 = None
+    overall_best_cov50 = None
+    total_iterations = 0
+    best_n_windows = 0
+    converged = False
+
+    for frac in lookback_fractions:
+        n_points = max(cal_len + 100, int(len(close) * frac))
+        subset = close.iloc[-n_points:] if n_points < len(close) else close
+
+        n_win = min(_N_CALIB_WINDOWS, max(2, len(subset) // (cal_len + 60)))
+        windows = _build_calib_windows(subset, n_win, cal_len)
+        if len(windows) < 1:
+            continue
+
+        k, score = _find_best_k(windows, n_sims)
+        total_iterations += 1
+        _, avg_90, avg_50 = _score_k_across_windows(windows, k, n_sims)
+
+        if score < overall_best_score:
+            overall_best_score = score
+            overall_best_k = k
+            overall_best_pct = int(frac * 100)
+            overall_best_cov90 = round(avg_90, 4)
+            overall_best_cov50 = round(avg_50, 4)
+            best_n_windows = len(windows)
+
+        if _is_converged(avg_90, avg_50):
+            converged = True
+            break
+
+    # If not converged, do a second pass: widen the k range around the
+    # current best and try again with more granularity.
+    if not converged and overall_best_cov90 is not None:
+        total_iterations += 1
+        spread = 0.5
+        narrow_candidates = np.linspace(
+            max(_K_MIN, overall_best_k - spread),
+            min(_K_MAX, overall_best_k + spread),
+            41
+        )
+        # Re-use the best lookback fraction
+        n_points = max(cal_len + 100, int(len(close) * (overall_best_pct / 100.0)))
+        subset = close.iloc[-n_points:] if n_points < len(close) else close
+        n_win = min(_N_CALIB_WINDOWS, max(2, len(subset) // (cal_len + 60)))
+        windows = _build_calib_windows(subset, n_win, cal_len)
+        if windows:
+            for k in narrow_candidates:
+                sc, avg_90, avg_50 = _score_k_across_windows(windows, float(k), n_sims)
+                if sc < overall_best_score:
+                    overall_best_score = sc
+                    overall_best_k = float(k)
+                    overall_best_cov90 = round(avg_90, 4)
+                    overall_best_cov50 = round(avg_50, 4)
+            if _is_converged(overall_best_cov90, overall_best_cov50):
+                converged = True
+
+    np.random.set_state(saved)
+
+    meta = {
+        "iterations": total_iterations,
+        "converged": converged,
+        "windows": best_n_windows,
+        "lookback_pct": overall_best_pct,
+        "avg_cov_90": overall_best_cov90,
+        "avg_cov_50": overall_best_cov50,
+    }
+    return float(np.clip(overall_best_k, _K_MIN, _K_MAX)), meta
 
 
 def _apply_calib(paths, k):
@@ -193,19 +322,10 @@ class handler(BaseHTTPRequestHandler):
             log_returns   = np.log(train / train.shift(1)).dropna().values
 
             # Calibration factor derived from training data only (no test data leakage)
-            calib_k = _compute_calib_factor(train)
+            calib_k, calib_meta = _compute_calib_factor(train)
 
             np.random.seed(None)
-            if _ARCH and len(log_returns) >= 100:
-                try:
-                    paths, model = _garch_simulate(
-                        log_returns, current_price, n_simulations, test_days)
-                except Exception:
-                    paths, model = _gbm_simulate(
-                        log_returns, current_price, n_simulations, test_days)
-            else:
-                paths, model = _gbm_simulate(
-                    log_returns, current_price, n_simulations, test_days)
+            paths, model = _simulate(log_returns, current_price, n_simulations, test_days)
 
             paths = _apply_calib(paths, calib_k)
 
@@ -226,6 +346,7 @@ class handler(BaseHTTPRequestHandler):
                 "ticker":        ticker,
                 "model":         model,
                 "calib_k":       round(calib_k, 3),
+                "calibration":   calib_meta,
                 "test_days":     test_days,
                 "dates":         dates,
                 "actual":        actual,

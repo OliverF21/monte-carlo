@@ -390,6 +390,33 @@
     .stat-value.val-up { color: var(--green); }
     .stat-value.val-down { color: var(--red); }
 
+    .calib-detail {
+      margin-top: 14px;
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      background: var(--bg);
+      border: 1px solid var(--border);
+    }
+    .calib-detail-title {
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-tertiary);
+      margin-bottom: 8px;
+    }
+    .calib-detail-grid {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 4px 16px;
+      font-size: 0.8125rem;
+    }
+    .calib-lbl { color: var(--text-secondary); }
+    .calib-val { font-weight: 500; font-variant-numeric: tabular-nums; }
+    .calib-converged { color: var(--green); }
+    .calib-partial { color: var(--amber, #e5a00d); }
+    .calib-failed { color: var(--red); }
+
     .results-actions {
       margin-top: 14px;
       display: flex;
@@ -724,7 +751,19 @@
           </div>
         </div>
 
-        <p class="disclaimer">A well-calibrated model should land close to each target coverage band. Under-coverage means the forecast range is too narrow; over-coverage means it is too wide.</p>
+        <div id="bt-calib-detail" class="calib-detail hidden">
+          <div class="calib-detail-title">Calibration Details</div>
+          <div class="calib-detail-grid">
+            <span class="calib-lbl">Iterations</span><span class="calib-val" id="bt-calib-iter">&mdash;</span>
+            <span class="calib-lbl">Windows tested</span><span class="calib-val" id="bt-calib-wins">&mdash;</span>
+            <span class="calib-lbl">Best lookback</span><span class="calib-val" id="bt-calib-lb">&mdash;</span>
+            <span class="calib-lbl">Avg 90% coverage (cal)</span><span class="calib-val" id="bt-calib-cov90">&mdash;</span>
+            <span class="calib-lbl">Avg 50% coverage (cal)</span><span class="calib-val" id="bt-calib-cov50">&mdash;</span>
+            <span class="calib-lbl">Status</span><span class="calib-val" id="bt-calib-status">&mdash;</span>
+          </div>
+        </div>
+
+        <p class="disclaimer">Calibration uses multi-window walk-forward validation across different lookback periods. A converged calibration means the model's bands matched target coverage across multiple historical windows.</p>
       </section>
 
       <!-- Code viewer -->
@@ -1077,8 +1116,47 @@
 
       var bothGood = good90 && good50;
       var calEl = document.getElementById('bt-calibration');
-      calEl.textContent = bothGood ? 'Well calibrated' : 'Needs review';
-      calEl.className = 'stat-value ' + (bothGood ? 'val-up' : 'val-down');
+      var cal = data.calibration || {};
+      var converged = cal.converged;
+
+      if (bothGood && converged) {
+        calEl.textContent = 'Converged';
+        calEl.className = 'stat-value val-up';
+      } else if (bothGood) {
+        calEl.textContent = 'Well calibrated';
+        calEl.className = 'stat-value val-up';
+      } else if (converged) {
+        calEl.textContent = 'Calibrated (partial fit)';
+        calEl.className = 'stat-value val-down';
+      } else {
+        calEl.textContent = 'Could not converge';
+        calEl.className = 'stat-value val-down';
+      }
+
+      // Populate calibration detail panel
+      var detailPanel = document.getElementById('bt-calib-detail');
+      if (cal.iterations != null) {
+        detailPanel.classList.remove('hidden');
+        document.getElementById('bt-calib-iter').textContent = cal.iterations;
+        document.getElementById('bt-calib-wins').textContent = cal.windows || '\u2014';
+        document.getElementById('bt-calib-lb').textContent = cal.lookback_pct != null ? cal.lookback_pct + '% of history' : '\u2014';
+        document.getElementById('bt-calib-cov90').textContent = cal.avg_cov_90 != null ? (cal.avg_cov_90 * 100).toFixed(1) + '% (target 90%)' : '\u2014';
+        document.getElementById('bt-calib-cov50').textContent = cal.avg_cov_50 != null ? (cal.avg_cov_50 * 100).toFixed(1) + '% (target 50%)' : '\u2014';
+
+        var statusEl = document.getElementById('bt-calib-status');
+        if (converged) {
+          statusEl.textContent = 'Converged across ' + cal.windows + ' validation windows';
+          statusEl.className = 'calib-val calib-converged';
+        } else if (cal.avg_cov_90 != null) {
+          statusEl.textContent = 'Best fit found but did not fully converge \u2014 model may not capture this asset\u2019s dynamics well';
+          statusEl.className = 'calib-val calib-partial';
+        } else {
+          statusEl.textContent = 'Insufficient data for calibration';
+          statusEl.className = 'calib-val calib-failed';
+        }
+      } else {
+        detailPanel.classList.add('hidden');
+      }
     }
 
     /* ── CSV Download ─────────────────────────────────────────────────────── */

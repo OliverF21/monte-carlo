@@ -131,36 +131,45 @@ def _build_calib_windows(close, n_windows, cal_len):
     return windows
 
 
-def _score_k_across_windows(windows, k, n_sims):
-    """Evaluate a candidate k across all calibration windows.
+def _presimulate_windows(windows, n_sims):
+    """Simulate paths once per window and cache them.
 
-    Returns the mean coverage score and mean coverage values.
+    Returns list of (paths, actual) tuples.  The heavy simulation work is
+    done here so the k-search loop only needs to rescale, not re-simulate.
     """
-    total_score = 0.0
-    total_90 = 0.0
-    total_50 = 0.0
+    cached = []
     for train_slice, actual in windows:
         lr    = np.log(train_slice / train_slice.shift(1)).dropna().values
         start = float(train_slice.iloc[-1])
         paths, _ = _simulate(lr, start, n_sims, len(actual))
-        scaled   = _apply_calib(paths, k)
+        cached.append((paths, actual))
+    return cached
+
+
+def _score_k_on_cached(cached, k):
+    """Evaluate a candidate k on pre-simulated paths.  Fast — no simulation."""
+    total_score = 0.0
+    total_90 = 0.0
+    total_50 = 0.0
+    for paths, actual in cached:
+        scaled = _apply_calib(paths, k)
         cov_90, cov_50 = _coverage_stats(scaled, actual)
         total_score += _coverage_score(cov_90, cov_50, k)
         total_90 += cov_90
         total_50 += cov_50
-    n = len(windows)
+    n = len(cached)
     return total_score / n, total_90 / n, total_50 / n
 
 
-def _find_best_k(windows, n_sims=200):
-    """Grid search with iterative refinement for the best k across windows."""
+def _find_best_k(cached):
+    """Grid search with iterative refinement for the best k on cached paths."""
     best_k = 1.0
     best_score = float("inf")
     candidates = np.linspace(_K_MIN, _K_MAX, 51)
 
     for _ in range(3):
         for k in candidates:
-            score, _, _ = _score_k_across_windows(windows, float(k), n_sims)
+            score, _, _ = _score_k_on_cached(cached, float(k))
             if score < best_score:
                 best_score = score
                 best_k = float(k)
@@ -172,7 +181,7 @@ def _find_best_k(windows, n_sims=200):
     return float(np.clip(best_k, _K_MIN, _K_MAX)), best_score
 
 
-def _compute_calib_factor(close, n_sims=200):
+def _compute_calib_factor(close, n_sims=100):
     """Iterative multi-window walk-forward calibration.
 
     1. Try multiple lookback lengths (full data, 75%, 50%) to find the
@@ -203,6 +212,7 @@ def _compute_calib_factor(close, n_sims=200):
     best_n_windows = 0
     converged = False
 
+    best_cached = None
     for frac in lookback_fractions:
         n_points = max(cal_len + 100, int(len(close) * frac))
         subset = close.iloc[-n_points:] if n_points < len(close) else close
@@ -212,9 +222,11 @@ def _compute_calib_factor(close, n_sims=200):
         if len(windows) < 1:
             continue
 
-        k, score = _find_best_k(windows, n_sims)
+        # Simulate once per window, then search k by rescaling only
+        cached = _presimulate_windows(windows, n_sims)
+        k, score = _find_best_k(cached)
         total_iterations += 1
-        _, avg_90, avg_50 = _score_k_across_windows(windows, k, n_sims)
+        _, avg_90, avg_50 = _score_k_on_cached(cached, k)
 
         if score < overall_best_score:
             overall_best_score = score
@@ -223,14 +235,15 @@ def _compute_calib_factor(close, n_sims=200):
             overall_best_cov90 = round(avg_90, 4)
             overall_best_cov50 = round(avg_50, 4)
             best_n_windows = len(windows)
+            best_cached = cached
 
         if _is_converged(avg_90, avg_50):
             converged = True
             break
 
-    # If not converged, do a second pass: widen the k range around the
-    # current best and try again with more granularity.
-    if not converged and overall_best_cov90 is not None:
+    # If not converged, do a second pass: fine-grained search around
+    # the current best using already-simulated paths (no new simulations).
+    if not converged and best_cached is not None:
         total_iterations += 1
         spread = 0.5
         narrow_candidates = np.linspace(
@@ -238,21 +251,15 @@ def _compute_calib_factor(close, n_sims=200):
             min(_K_MAX, overall_best_k + spread),
             41
         )
-        # Re-use the best lookback fraction
-        n_points = max(cal_len + 100, int(len(close) * (overall_best_pct / 100.0)))
-        subset = close.iloc[-n_points:] if n_points < len(close) else close
-        n_win = min(_N_CALIB_WINDOWS, max(2, len(subset) // (cal_len + 60)))
-        windows = _build_calib_windows(subset, n_win, cal_len)
-        if windows:
-            for k in narrow_candidates:
-                sc, avg_90, avg_50 = _score_k_across_windows(windows, float(k), n_sims)
-                if sc < overall_best_score:
-                    overall_best_score = sc
-                    overall_best_k = float(k)
-                    overall_best_cov90 = round(avg_90, 4)
-                    overall_best_cov50 = round(avg_50, 4)
-            if _is_converged(overall_best_cov90, overall_best_cov50):
-                converged = True
+        for k in narrow_candidates:
+            sc, avg_90, avg_50 = _score_k_on_cached(best_cached, float(k))
+            if sc < overall_best_score:
+                overall_best_score = sc
+                overall_best_k = float(k)
+                overall_best_cov90 = round(avg_90, 4)
+                overall_best_cov50 = round(avg_50, 4)
+        if _is_converged(overall_best_cov90, overall_best_cov50):
+            converged = True
 
     np.random.set_state(saved)
 

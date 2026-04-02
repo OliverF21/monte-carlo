@@ -56,7 +56,6 @@
 
       /* Motion */
       --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-      --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -93,14 +92,7 @@
       position: absolute;
       top: 0; left: 0; right: 0;
       height: 3px;
-      background: linear-gradient(90deg, var(--accent), #7c3aed, var(--accent));
-      background-size: 200% 100%;
-      animation: shimmer 8s ease infinite;
-    }
-
-    @keyframes shimmer {
-      0%, 100% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
+      background: var(--accent);
     }
 
     header h1 {
@@ -197,6 +189,28 @@
     }
 
     .input-group input[type="text"]::placeholder { color: var(--text-tertiary); }
+
+    .input-hint {
+      margin-top: 4px;
+      font-size: 0.6875rem;
+      color: var(--text-tertiary);
+    }
+
+    .input-error {
+      margin-top: 4px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #991b1b;
+      display: none;
+    }
+
+    .input-group.has-error input[type="text"] {
+      border-color: var(--red);
+      box-shadow: 0 0 0 3px var(--red-soft);
+    }
+
+    .input-group.has-error .input-error { display: block; }
+    .input-group.has-error .input-hint { display: none; }
 
     .input-group input[type="text"]:focus,
     .input-group select:focus,
@@ -388,12 +402,6 @@
       justify-content: center;
       font-size: 1.25rem;
       color: var(--accent);
-      animation: pulse-soft 3s ease-in-out infinite;
-    }
-
-    @keyframes pulse-soft {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.05); opacity: 0.85; }
     }
 
     .empty-state strong { color: var(--text-secondary); }
@@ -428,18 +436,32 @@
       overflow: hidden;
     }
 
+    /* ── Results summary ─────────────────────────────────────────── */
+    .results-summary {
+      margin-top: 16px;
+      font-size: 0.9375rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
     /* ── Stats grid ──────────────────────────────────────────────── */
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(3, 1fr);
       gap: 10px;
       margin-top: 20px;
+    }
+
+    .stats-grid--secondary {
+      grid-template-columns: repeat(5, 1fr);
+      margin-top: 10px;
     }
 
     .stat-card {
       padding: 14px 16px;
       border-radius: var(--radius-sm);
-      background: var(--bg);
+      background: var(--surface);
       border: 1px solid var(--border-subtle);
       transition: border-color 0.2s var(--ease-out), transform 0.2s var(--ease-out);
     }
@@ -449,14 +471,24 @@
       transform: translateY(-1px);
     }
 
+    .stats-grid--secondary .stat-card {
+      background: var(--bg);
+      padding: 10px 14px;
+      border-left: none;
+    }
+
     .stat-label {
       margin-bottom: 6px;
-      font-size: 0.625rem;
+      font-size: 0.75rem;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.06em;
       color: var(--text-tertiary);
       cursor: help;
+    }
+
+    .stats-grid--secondary .stat-label {
+      font-size: 0.6875rem;
     }
 
     .stat-value {
@@ -467,8 +499,140 @@
       letter-spacing: -0.01em;
     }
 
+    .stats-grid--secondary .stat-value {
+      font-size: 0.9375rem;
+    }
+
     .val-up { color: var(--green) !important; }
     .val-down { color: var(--red) !important; }
+
+    /* Semantic stat card tinting */
+    .stat-card--gain { border-left: 3px solid var(--green); }
+    .stat-card--loss { border-left: 3px solid var(--red); }
+    .stat-card--neutral { border-left: 3px solid var(--accent); }
+    .stat-card--warn { border-left: 3px solid var(--amber); }
+
+    /* ── Section accents ────────────────────────────────────────── */
+    #results-card {
+      border-top: 3px solid var(--accent);
+    }
+
+    #backtest-card {
+      border-top: 3px solid var(--accent);
+    }
+
+    /* ── Coverage bar visualization ──────────────────────────────── */
+    .coverage-bar-wrap {
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .coverage-bar-item {
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      background: var(--bg);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .coverage-bar-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-tertiary);
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .coverage-bar-label span { font-family: var(--font-mono); font-size: 0.6875rem; }
+
+    .coverage-bar {
+      height: 8px;
+      border-radius: 4px;
+      background: var(--border-subtle);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .coverage-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.6s var(--ease-out);
+    }
+
+    .coverage-bar-fill--good { background: linear-gradient(90deg, var(--green), #22c55e); }
+    .coverage-bar-fill--bad { background: linear-gradient(90deg, var(--amber), var(--red)); }
+
+    .coverage-bar-target {
+      position: absolute;
+      top: -3px;
+      bottom: -3px;
+      width: 2px;
+      background: var(--text);
+      border-radius: 1px;
+      opacity: 0.4;
+    }
+
+    /* ── Manual calibration override ─────────────────────────────── */
+    .manual-calib {
+      margin-top: 16px;
+      padding: 16px 18px;
+      border-radius: var(--radius-sm);
+      background: var(--bg);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .manual-calib-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .manual-calib-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-tertiary);
+    }
+
+    .manual-calib-value {
+      font-family: var(--font-mono);
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .manual-calib-range {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .manual-calib-meta {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 6px;
+      font-size: 0.6875rem;
+      color: var(--text-tertiary);
+    }
+
+    .manual-calib-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .btn-xs {
+      padding: 5px 12px;
+      font-size: 0.75rem;
+      border-radius: var(--radius-xs);
+    }
 
     /* ── Calibration detail ──────────────────────────────────────── */
     .calib-detail {
@@ -480,7 +644,7 @@
     }
 
     .calib-detail-title {
-      font-size: 0.625rem;
+      font-size: 0.75rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.06em;
@@ -622,19 +786,20 @@
       opacity: 0;
       animation: reveal 0.3s var(--ease-out) forwards;
     }
-    .card-reveal .stat-card:nth-child(1) { animation-delay: 0.05s; }
-    .card-reveal .stat-card:nth-child(2) { animation-delay: 0.1s; }
-    .card-reveal .stat-card:nth-child(3) { animation-delay: 0.15s; }
-    .card-reveal .stat-card:nth-child(4) { animation-delay: 0.2s; }
-    .card-reveal .stat-card:nth-child(5) { animation-delay: 0.25s; }
-    .card-reveal .stat-card:nth-child(6) { animation-delay: 0.3s; }
-    .card-reveal .stat-card:nth-child(7) { animation-delay: 0.35s; }
-    .card-reveal .stat-card:nth-child(8) { animation-delay: 0.4s; }
+    .card-reveal .stats-grid .stat-card:nth-child(1) { animation-delay: 0.05s; }
+    .card-reveal .stats-grid .stat-card:nth-child(2) { animation-delay: 0.1s; }
+    .card-reveal .stats-grid .stat-card:nth-child(3) { animation-delay: 0.15s; }
+    .card-reveal .stats-grid--secondary .stat-card:nth-child(1) { animation-delay: 0.2s; }
+    .card-reveal .stats-grid--secondary .stat-card:nth-child(2) { animation-delay: 0.25s; }
+    .card-reveal .stats-grid--secondary .stat-card:nth-child(3) { animation-delay: 0.3s; }
+    .card-reveal .stats-grid--secondary .stat-card:nth-child(4) { animation-delay: 0.35s; }
+    .card-reveal .stats-grid--secondary .stat-card:nth-child(5) { animation-delay: 0.4s; }
 
     /* ── Responsive ──────────────────────────────────────────────── */
     @media (max-width: 768px) {
       .input-grid { grid-template-columns: 1fr 1fr; }
       .stats-grid { grid-template-columns: 1fr 1fr; }
+      .stats-grid--secondary { grid-template-columns: repeat(3, 1fr); }
       #chart, #backtest-chart { height: 300px; }
     }
 
@@ -642,7 +807,8 @@
       .page-shell { padding: 16px 14px 32px; }
       header { padding: 20px; }
       .card { padding: 18px; }
-      .input-grid, .stats-grid { grid-template-columns: 1fr; }
+      .input-grid, .stats-grid, .stats-grid--secondary { grid-template-columns: 1fr; }
+      .coverage-bar-wrap { grid-template-columns: 1fr; }
       .slider-group { grid-column: auto; }
       .backtest-row { flex-direction: column; align-items: stretch; }
       .backtest-row .inline-select { width: 100%; }
@@ -673,9 +839,11 @@
 
         <form id="sim-form">
           <div class="input-grid">
-            <div class="input-group">
+            <div class="input-group" id="ticker-group">
               <label for="ticker">Stock Ticker</label>
-              <input type="text" id="ticker" value="AAPL" placeholder="e.g. AAPL, TSLA, MSFT" />
+              <input type="text" id="ticker" value="AAPL" placeholder="e.g. AAPL" />
+              <div class="input-hint">US stock symbols only</div>
+              <div class="input-error" id="ticker-error">Enter a valid ticker (1–5 letters, e.g. AAPL)</div>
             </div>
 
             <div class="input-group">
@@ -757,36 +925,41 @@
 
         <div id="chart"></div>
 
+        <p class="results-summary" id="results-summary"></p>
+
         <div class="stats-grid">
-          <div class="stat-card">
+          <div class="stat-card stat-card--neutral">
             <div class="stat-label" title="The last closing price of the stock">Current Price</div>
             <div class="stat-value" id="stat-current">&mdash;</div>
           </div>
-          <div class="stat-card">
+          <div class="stat-card" id="stat-median-card">
             <div class="stat-label" title="The middle forecast — half of simulations end above, half below">Median Forecast</div>
             <div class="stat-value" id="stat-median">&mdash;</div>
           </div>
-          <div class="stat-card">
-            <div class="stat-label" title="Pessimistic scenario — only 5% of simulations ended below this price">Bear Case (5th pct)</div>
-            <div class="stat-value" id="stat-p5">&mdash;</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label" title="Optimistic scenario — only 5% of simulations ended above this price">Bull Case (95th pct)</div>
-            <div class="stat-value" id="stat-p95">&mdash;</div>
-          </div>
-          <div class="stat-card">
+          <div class="stat-card" id="stat-prob-card">
             <div class="stat-label" title="Percentage of simulated paths that ended above today's price">Prob. of Gain</div>
             <div class="stat-value" id="stat-prob">&mdash;</div>
           </div>
-          <div class="stat-card">
+        </div>
+
+        <div class="stats-grid stats-grid--secondary">
+          <div class="stat-card stat-card--loss">
+            <div class="stat-label" title="Pessimistic scenario — only 5% of simulations ended below this price">Bear Case (5th pct)</div>
+            <div class="stat-value" id="stat-p5">&mdash;</div>
+          </div>
+          <div class="stat-card stat-card--gain">
+            <div class="stat-label" title="Optimistic scenario — only 5% of simulations ended above this price">Bull Case (95th pct)</div>
+            <div class="stat-value" id="stat-p95">&mdash;</div>
+          </div>
+          <div class="stat-card stat-card--warn">
             <div class="stat-label" title="Annualized standard deviation — higher means more price uncertainty">Annual Volatility</div>
             <div class="stat-value" id="stat-vol">&mdash;</div>
           </div>
-          <div class="stat-card">
+          <div class="stat-card stat-card--warn">
             <div class="stat-label" title="Value at Risk: the maximum expected single-day loss with 95% confidence, based on historical returns">1-Day 95% VaR</div>
             <div class="stat-value" id="stat-var">&mdash;</div>
           </div>
-          <div class="stat-card">
+          <div class="stat-card stat-card--neutral">
             <div class="stat-label" title="Sigma multiplier for confidence bands — 1.00x is perfectly calibrated, above means bands were widened">Calibration</div>
             <div class="stat-value" id="stat-calib">&mdash;</div>
           </div>
@@ -811,23 +984,55 @@
 
         <div id="backtest-chart"></div>
 
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-label" title="What fraction of actual prices fell inside the 90% confidence band — target is 90%">90% Band Coverage</div>
-            <div class="stat-value" id="bt-cov90">&mdash;</div>
+        <div class="coverage-bar-wrap">
+          <div class="coverage-bar-item">
+            <div class="coverage-bar-label">
+              90% Band Coverage
+              <span id="bt-cov90-val">&mdash;</span>
+            </div>
+            <div class="coverage-bar">
+              <div class="coverage-bar-fill" id="bt-cov90-bar" style="width: 0%"></div>
+              <div class="coverage-bar-target" style="left: 90%"></div>
+            </div>
           </div>
-          <div class="stat-card">
-            <div class="stat-label" title="What fraction of actual prices fell inside the 50% confidence band — target is 50%">50% Band Coverage</div>
-            <div class="stat-value" id="bt-cov50">&mdash;</div>
+          <div class="coverage-bar-item">
+            <div class="coverage-bar-label">
+              50% Band Coverage
+              <span id="bt-cov50-val">&mdash;</span>
+            </div>
+            <div class="coverage-bar">
+              <div class="coverage-bar-fill" id="bt-cov50-bar" style="width: 0%"></div>
+              <div class="coverage-bar-target" style="left: 50%"></div>
+            </div>
           </div>
+        </div>
+
+        <div class="stats-grid" style="grid-template-columns: 1fr">
           <div class="stat-card">
-            <div class="stat-label" title="Overall assessment — a well-calibrated model's coverage should be close to target band widths">Calibration</div>
+            <div class="stat-label" title="Overall assessment — a well-calibrated model's coverage should be close to target band widths">Calibration Status</div>
             <div class="stat-value" id="bt-calibration">&mdash;</div>
           </div>
         </div>
 
+        <div id="bt-manual-calib" class="manual-calib hidden">
+          <div class="manual-calib-header">
+            <span class="manual-calib-title">Manual Calibration Override</span>
+            <span class="manual-calib-value" id="manual-k-val">1.00x</span>
+          </div>
+          <input type="range" class="manual-calib-range" id="manual-k-slider" min="0.3" max="4.0" step="0.05" value="1.0" />
+          <div class="manual-calib-meta">
+            <span>0.3x (narrow)</span>
+            <span>1.0x (neutral)</span>
+            <span>4.0x (wide)</span>
+          </div>
+          <div class="manual-calib-actions">
+            <button type="button" class="btn btn-secondary btn-xs" id="manual-k-reset">Reset to Auto</button>
+            <button type="button" class="btn btn-primary btn-xs" id="manual-k-apply">Apply &amp; Re-run</button>
+          </div>
+        </div>
+
         <div id="bt-calib-detail" class="calib-detail hidden">
-          <div class="calib-detail-title">Calibration Details</div>
+          <div class="calib-detail-title">Auto-Calibration Details</div>
           <div class="calib-detail-grid">
             <span class="calib-lbl">Iterations</span><span class="calib-val" id="bt-calib-iter">&mdash;</span>
             <span class="calib-lbl">Windows tested</span><span class="calib-val" id="bt-calib-wins">&mdash;</span>
@@ -838,7 +1043,7 @@
           </div>
         </div>
 
-        <p class="disclaimer">Calibration uses multi-window walk-forward validation across different lookback periods. A converged calibration means the model's bands matched target coverage across multiple historical windows.</p>
+        <p class="disclaimer">Adjust the calibration slider to manually widen or narrow the confidence bands. Auto-calibration uses multi-window walk-forward validation across different lookback periods.</p>
       </section>
 
       <!-- Code viewer -->
@@ -894,7 +1099,13 @@
       document.getElementById(id).textContent = val;
     }
 
-    function showError(msg) {
+    function showError(msg, isTickerError) {
+      if (isTickerError) {
+        var group = document.getElementById('ticker-group');
+        var errEl = document.getElementById('ticker-error');
+        errEl.textContent = msg;
+        group.classList.add('has-error');
+      }
       var el = document.getElementById('error-msg');
       el.textContent = msg;
       el.classList.remove('hidden');
@@ -902,6 +1113,9 @@
 
     function hideError() {
       document.getElementById('error-msg').classList.add('hidden');
+      var group = document.getElementById('ticker-group');
+      group.classList.remove('has-error');
+      document.getElementById('ticker-error').textContent = 'Enter a valid ticker (1\u20135 letters, e.g. AAPL)';
     }
 
     var simLoadingMessages = [
@@ -945,20 +1159,53 @@
       if (on) { _cycleMessages(btLoadingMessages); } else { clearInterval(_loadingInterval); }
     }
 
+    /* ── Ticker validation ────────────────────────────────────────────────── */
+    function validateTicker() {
+      var val = document.getElementById('ticker').value.trim();
+      var valid = /^[A-Za-z]{1,5}$/.test(val);
+      var group = document.getElementById('ticker-group');
+      group.classList.toggle('has-error', !valid && val.length > 0);
+      document.getElementById('run-btn').disabled = !valid;
+      document.getElementById('backtest-btn').disabled = !valid;
+      return valid;
+    }
+
     /* ── Event binding ────────────────────────────────────────────────────── */
+    document.getElementById('ticker').addEventListener('blur', validateTicker);
+    document.getElementById('ticker').addEventListener('input', validateTicker);
+
     document.getElementById('simulations').addEventListener('input', function () {
       document.getElementById('sim-val').textContent = this.value;
     });
 
     document.getElementById('sim-form').addEventListener('submit', function (e) {
       e.preventDefault();
+      if (!validateTicker()) return;
       runSimulation();
     });
 
-    document.getElementById('backtest-btn').addEventListener('click', runBacktest);
+    document.getElementById('backtest-btn').addEventListener('click', function () {
+      if (!validateTicker()) return;
+      runBacktest();
+    });
     document.getElementById('csv-btn').addEventListener('click', downloadCSV);
     document.getElementById('code-toggle-btn').addEventListener('click', toggleCode);
     document.getElementById('copy-btn').addEventListener('click', copyCode);
+
+    /* Manual calibration slider */
+    document.getElementById('manual-k-slider').addEventListener('input', function () {
+      document.getElementById('manual-k-val').textContent = parseFloat(this.value).toFixed(2) + 'x';
+    });
+    document.getElementById('manual-k-reset').addEventListener('click', function () {
+      var autoK = parseFloat(document.getElementById('manual-k-slider').dataset.autoK || '1.0');
+      document.getElementById('manual-k-slider').value = autoK;
+      document.getElementById('manual-k-val').textContent = autoK.toFixed(2) + 'x';
+      runBacktest();
+    });
+    document.getElementById('manual-k-apply').addEventListener('click', function () {
+      var k = parseFloat(document.getElementById('manual-k-slider').value);
+      runBacktest(k);
+    });
 
     /* ── Simulation ───────────────────────────────────────────────────────── */
     async function runSimulation() {
@@ -967,7 +1214,7 @@
       var simulations = parseInt(document.getElementById('simulations').value, 10);
       var forecast_days = parseInt(document.getElementById('forecast_days').value, 10);
 
-      if (!ticker) { showError('Please enter a stock ticker symbol.'); return; }
+      if (!ticker || !validateTicker()) return;
 
       if (typeof Plotly === 'undefined') {
         showError('Charts are still loading. Please wait a moment and try again.');
@@ -990,7 +1237,9 @@
         var data = await res.json();
 
         if (!res.ok || data.error) {
-          showError(data.error || 'An unexpected error occurred. Please try again.');
+          var errMsg = data.error || 'An unexpected error occurred. Please try again.';
+          var isTickerErr = /no data|not found|invalid.*ticker|unknown.*symbol/i.test(errMsg);
+          showError(errMsg, isTickerErr);
           return;
         }
 
@@ -1090,6 +1339,15 @@
       var cp = data.current_price;
       var medianUp = s.median_final >= cp;
 
+      // Summary line
+      var pctChange = ((s.median_final - cp) / cp * 100).toFixed(1);
+      var sign = medianUp ? '+' : '';
+      var horizonLabel = document.getElementById('forecast_days').selectedOptions[0].text;
+      var summaryEl = document.getElementById('results-summary');
+      summaryEl.textContent = data.ticker + ' median forecast is $' + s.median_final.toFixed(2) +
+        ' (' + sign + pctChange + '%) over ' + horizonLabel.toLowerCase() +
+        ', with a ' + (s.prob_gain * 100).toFixed(0) + '% probability of finishing above today\u2019s price.';
+
       setText('stat-current', '$' + cp.toFixed(2));
 
       var medianEl = document.getElementById('stat-median');
@@ -1100,6 +1358,10 @@
       arrow.textContent = medianUp ? '\u25B2' : '\u25BC';
       arrow.setAttribute('aria-label', medianUp ? 'up from current price' : 'down from current price');
       medianEl.appendChild(arrow);
+
+      // Dynamic semantic card coloring
+      document.getElementById('stat-median-card').className = 'stat-card ' + (medianUp ? 'stat-card--gain' : 'stat-card--loss');
+      document.getElementById('stat-prob-card').className = 'stat-card ' + (s.prob_gain >= 0.5 ? 'stat-card--gain' : 'stat-card--loss');
 
       setText('stat-p5', '$' + s.p5_final.toFixed(2));
       setText('stat-p95', '$' + s.p95_final.toFixed(2));
@@ -1124,12 +1386,12 @@
     }
 
     /* ── Backtest ──────────────────────────────────────────────────────────── */
-    async function runBacktest() {
+    async function runBacktest(manualK) {
       var ticker = document.getElementById('ticker').value.trim().toUpperCase();
       var simulations = parseInt(document.getElementById('simulations').value, 10);
       var test_days = parseInt(document.getElementById('test_days').value, 10);
 
-      if (!ticker) { showError('Please enter a stock ticker symbol.'); return; }
+      if (!ticker || !validateTicker()) return;
 
       if (typeof Plotly === 'undefined') {
         showError('Charts are still loading. Please wait a moment and try again.');
@@ -1141,16 +1403,21 @@
       document.getElementById('backtest-card').classList.add('hidden');
       document.getElementById('empty-state').classList.add('hidden');
 
+      var payload = { ticker: ticker, simulations: simulations, test_days: test_days };
+      if (manualK != null) payload.manual_k = manualK;
+
       try {
         var res = await fetch('/api/backtest', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ticker: ticker, simulations: simulations, test_days: test_days }),
+          body: JSON.stringify(payload),
         });
 
         var data = await res.json();
         if (!res.ok || data.error) {
-          showError(data.error || 'Backtest failed. Please try again.');
+          var errMsg = data.error || 'Backtest failed. Please try again.';
+          var isTickerErr = /no data|not found|invalid.*ticker|unknown.*symbol/i.test(errMsg);
+          showError(errMsg, isTickerErr);
           return;
         }
 
@@ -1201,37 +1468,56 @@
         'Test window: ' + document.getElementById('test_days').selectedOptions[0].text +
         ' \u00b7 Calibration factor: ' + (data.calib_k != null ? data.calib_k.toFixed(2) : '1.00') + 'x';
 
-      var cov90 = (coverage.band_90 * 100).toFixed(1);
-      var cov50 = (coverage.band_50 * 100).toFixed(1);
+      var cov90 = coverage.band_90 * 100;
+      var cov50 = coverage.band_50 * 100;
       var good90 = Math.abs(coverage.band_90 - 0.90) <= 0.08;
       var good50 = Math.abs(coverage.band_50 - 0.50) <= 0.10;
 
-      var el90 = document.getElementById('bt-cov90');
-      el90.textContent = cov90 + '%' + (good90 ? ' (on target)' : ' (off target)');
-      el90.className = 'stat-value ' + (good90 ? 'val-up' : 'val-down');
+      // Coverage bars
+      document.getElementById('bt-cov90-val').textContent = cov90.toFixed(1) + '% ' + (good90 ? '(on target)' : '(off target)');
+      document.getElementById('bt-cov90-val').style.color = good90 ? 'var(--green)' : 'var(--red)';
+      var bar90 = document.getElementById('bt-cov90-bar');
+      bar90.style.width = Math.min(100, cov90).toFixed(1) + '%';
+      bar90.className = 'coverage-bar-fill ' + (good90 ? 'coverage-bar-fill--good' : 'coverage-bar-fill--bad');
 
-      var el50 = document.getElementById('bt-cov50');
-      el50.textContent = cov50 + '%' + (good50 ? ' (on target)' : ' (off target)');
-      el50.className = 'stat-value ' + (good50 ? 'val-up' : 'val-down');
+      document.getElementById('bt-cov50-val').textContent = cov50.toFixed(1) + '% ' + (good50 ? '(on target)' : '(off target)');
+      document.getElementById('bt-cov50-val').style.color = good50 ? 'var(--green)' : 'var(--red)';
+      var bar50 = document.getElementById('bt-cov50-bar');
+      bar50.style.width = Math.min(100, cov50).toFixed(1) + '%';
+      bar50.className = 'coverage-bar-fill ' + (good50 ? 'coverage-bar-fill--good' : 'coverage-bar-fill--bad');
 
+      // Calibration status
       var bothGood = good90 && good50;
       var calEl = document.getElementById('bt-calibration');
       var cal = data.calibration || {};
       var converged = cal.converged;
+      var isManual = data.manual_k != null;
 
-      if (bothGood && converged) {
-        calEl.textContent = 'Converged';
+      if (isManual) {
+        calEl.textContent = 'Manual override (' + data.calib_k.toFixed(2) + 'x)';
+        calEl.className = 'stat-value' + (bothGood ? ' val-up' : '');
+      } else if (bothGood && converged) {
+        calEl.textContent = 'Converged (' + data.calib_k.toFixed(2) + 'x)';
         calEl.className = 'stat-value val-up';
       } else if (bothGood) {
-        calEl.textContent = 'Well calibrated';
+        calEl.textContent = 'Well calibrated (' + data.calib_k.toFixed(2) + 'x)';
         calEl.className = 'stat-value val-up';
       } else if (converged) {
-        calEl.textContent = 'Calibrated (partial fit)';
+        calEl.textContent = 'Partial fit (' + data.calib_k.toFixed(2) + 'x)';
         calEl.className = 'stat-value val-down';
       } else {
-        calEl.textContent = 'Could not converge';
+        calEl.textContent = 'Could not converge (' + data.calib_k.toFixed(2) + 'x)';
         calEl.className = 'stat-value val-down';
       }
+
+      // Manual calibration slider
+      var manualPanel = document.getElementById('bt-manual-calib');
+      manualPanel.classList.remove('hidden');
+      var slider = document.getElementById('manual-k-slider');
+      var autoK = data.auto_k || data.calib_k || 1.0;
+      slider.dataset.autoK = autoK;
+      slider.value = data.calib_k;
+      document.getElementById('manual-k-val').textContent = data.calib_k.toFixed(2) + 'x';
 
       // Populate calibration detail panel
       var detailPanel = document.getElementById('bt-calib-detail');
@@ -1248,7 +1534,7 @@
           statusEl.textContent = 'Converged across ' + cal.windows + ' validation windows';
           statusEl.className = 'calib-val calib-converged';
         } else if (cal.avg_cov_90 != null) {
-          statusEl.textContent = 'Best fit found but did not fully converge \u2014 model may not capture this asset\u2019s dynamics well';
+          statusEl.textContent = 'Best fit found but did not fully converge \u2014 try adjusting manually above';
           statusEl.className = 'calib-val calib-partial';
         } else {
           statusEl.textContent = 'Insufficient data for calibration';

@@ -56,7 +56,6 @@
 
       /* Motion */
       --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-      --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -93,14 +92,7 @@
       position: absolute;
       top: 0; left: 0; right: 0;
       height: 3px;
-      background: linear-gradient(90deg, var(--accent), #7c3aed, var(--accent));
-      background-size: 200% 100%;
-      animation: shimmer 8s ease infinite;
-    }
-
-    @keyframes shimmer {
-      0%, 100% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
+      background: var(--accent);
     }
 
     header h1 {
@@ -197,6 +189,28 @@
     }
 
     .input-group input[type="text"]::placeholder { color: var(--text-tertiary); }
+
+    .input-hint {
+      margin-top: 4px;
+      font-size: 0.6875rem;
+      color: var(--text-tertiary);
+    }
+
+    .input-error {
+      margin-top: 4px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #991b1b;
+      display: none;
+    }
+
+    .input-group.has-error input[type="text"] {
+      border-color: var(--red);
+      box-shadow: 0 0 0 3px var(--red-soft);
+    }
+
+    .input-group.has-error .input-error { display: block; }
+    .input-group.has-error .input-hint { display: none; }
 
     .input-group input[type="text"]:focus,
     .input-group select:focus,
@@ -388,12 +402,6 @@
       justify-content: center;
       font-size: 1.25rem;
       color: var(--accent);
-      animation: pulse-soft 3s ease-in-out infinite;
-    }
-
-    @keyframes pulse-soft {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.05); opacity: 0.85; }
     }
 
     .empty-state strong { color: var(--text-secondary); }
@@ -428,18 +436,32 @@
       overflow: hidden;
     }
 
+    /* ── Results summary ─────────────────────────────────────────── */
+    .results-summary {
+      margin-top: 16px;
+      font-size: 0.9375rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
     /* ── Stats grid ──────────────────────────────────────────────── */
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(3, 1fr);
       gap: 10px;
       margin-top: 20px;
+    }
+
+    .stats-grid--secondary {
+      grid-template-columns: repeat(5, 1fr);
+      margin-top: 10px;
     }
 
     .stat-card {
       padding: 14px 16px;
       border-radius: var(--radius-sm);
-      background: var(--bg);
+      background: var(--surface);
       border: 1px solid var(--border-subtle);
       transition: border-color 0.2s var(--ease-out), transform 0.2s var(--ease-out);
     }
@@ -449,14 +471,24 @@
       transform: translateY(-1px);
     }
 
+    .stats-grid--secondary .stat-card {
+      background: var(--bg);
+      padding: 10px 14px;
+      border-left: none;
+    }
+
     .stat-label {
       margin-bottom: 6px;
-      font-size: 0.625rem;
+      font-size: 0.75rem;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.06em;
       color: var(--text-tertiary);
       cursor: help;
+    }
+
+    .stats-grid--secondary .stat-label {
+      font-size: 0.6875rem;
     }
 
     .stat-value {
@@ -465,6 +497,10 @@
       font-variant-numeric: tabular-nums;
       color: var(--text);
       letter-spacing: -0.01em;
+    }
+
+    .stats-grid--secondary .stat-value {
+      font-size: 0.9375rem;
     }
 
     .val-up { color: var(--green) !important; }
@@ -478,13 +514,11 @@
 
     /* ── Section accents ────────────────────────────────────────── */
     #results-card {
-      border-top: 3px solid transparent;
-      border-image: linear-gradient(90deg, var(--accent), #7c3aed 50%, var(--accent)) 1;
+      border-top: 3px solid var(--accent);
     }
 
     #backtest-card {
-      border-top: 3px solid transparent;
-      border-image: linear-gradient(90deg, #7c3aed, var(--accent) 50%, #7c3aed) 1;
+      border-top: 3px solid var(--accent);
     }
 
     /* ── Coverage bar visualization ──────────────────────────────── */
@@ -503,7 +537,7 @@
     }
 
     .coverage-bar-label {
-      font-size: 0.625rem;
+      font-size: 0.75rem;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.06em;
@@ -559,7 +593,7 @@
     }
 
     .manual-calib-title {
-      font-size: 0.625rem;
+      font-size: 0.75rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.06em;
@@ -610,7 +644,7 @@
     }
 
     .calib-detail-title {
-      font-size: 0.625rem;
+      font-size: 0.75rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.06em;
@@ -752,19 +786,20 @@
       opacity: 0;
       animation: reveal 0.3s var(--ease-out) forwards;
     }
-    .card-reveal .stat-card:nth-child(1) { animation-delay: 0.05s; }
-    .card-reveal .stat-card:nth-child(2) { animation-delay: 0.1s; }
-    .card-reveal .stat-card:nth-child(3) { animation-delay: 0.15s; }
-    .card-reveal .stat-card:nth-child(4) { animation-delay: 0.2s; }
-    .card-reveal .stat-card:nth-child(5) { animation-delay: 0.25s; }
-    .card-reveal .stat-card:nth-child(6) { animation-delay: 0.3s; }
-    .card-reveal .stat-card:nth-child(7) { animation-delay: 0.35s; }
-    .card-reveal .stat-card:nth-child(8) { animation-delay: 0.4s; }
+    .card-reveal .stats-grid .stat-card:nth-child(1) { animation-delay: 0.05s; }
+    .card-reveal .stats-grid .stat-card:nth-child(2) { animation-delay: 0.1s; }
+    .card-reveal .stats-grid .stat-card:nth-child(3) { animation-delay: 0.15s; }
+    .card-reveal .stats-grid--secondary .stat-card:nth-child(1) { animation-delay: 0.2s; }
+    .card-reveal .stats-grid--secondary .stat-card:nth-child(2) { animation-delay: 0.25s; }
+    .card-reveal .stats-grid--secondary .stat-card:nth-child(3) { animation-delay: 0.3s; }
+    .card-reveal .stats-grid--secondary .stat-card:nth-child(4) { animation-delay: 0.35s; }
+    .card-reveal .stats-grid--secondary .stat-card:nth-child(5) { animation-delay: 0.4s; }
 
     /* ── Responsive ──────────────────────────────────────────────── */
     @media (max-width: 768px) {
       .input-grid { grid-template-columns: 1fr 1fr; }
       .stats-grid { grid-template-columns: 1fr 1fr; }
+      .stats-grid--secondary { grid-template-columns: repeat(3, 1fr); }
       #chart, #backtest-chart { height: 300px; }
     }
 
@@ -772,7 +807,7 @@
       .page-shell { padding: 16px 14px 32px; }
       header { padding: 20px; }
       .card { padding: 18px; }
-      .input-grid, .stats-grid { grid-template-columns: 1fr; }
+      .input-grid, .stats-grid, .stats-grid--secondary { grid-template-columns: 1fr; }
       .coverage-bar-wrap { grid-template-columns: 1fr; }
       .slider-group { grid-column: auto; }
       .backtest-row { flex-direction: column; align-items: stretch; }
@@ -804,9 +839,11 @@
 
         <form id="sim-form">
           <div class="input-grid">
-            <div class="input-group">
+            <div class="input-group" id="ticker-group">
               <label for="ticker">Stock Ticker</label>
-              <input type="text" id="ticker" value="AAPL" placeholder="e.g. AAPL, TSLA, MSFT" />
+              <input type="text" id="ticker" value="AAPL" placeholder="e.g. AAPL" />
+              <div class="input-hint">US stock symbols only</div>
+              <div class="input-error" id="ticker-error">Enter a valid ticker (1–5 letters, e.g. AAPL)</div>
             </div>
 
             <div class="input-group">
@@ -888,6 +925,8 @@
 
         <div id="chart"></div>
 
+        <p class="results-summary" id="results-summary"></p>
+
         <div class="stats-grid">
           <div class="stat-card stat-card--neutral">
             <div class="stat-label" title="The last closing price of the stock">Current Price</div>
@@ -897,6 +936,13 @@
             <div class="stat-label" title="The middle forecast — half of simulations end above, half below">Median Forecast</div>
             <div class="stat-value" id="stat-median">&mdash;</div>
           </div>
+          <div class="stat-card" id="stat-prob-card">
+            <div class="stat-label" title="Percentage of simulated paths that ended above today's price">Prob. of Gain</div>
+            <div class="stat-value" id="stat-prob">&mdash;</div>
+          </div>
+        </div>
+
+        <div class="stats-grid stats-grid--secondary">
           <div class="stat-card stat-card--loss">
             <div class="stat-label" title="Pessimistic scenario — only 5% of simulations ended below this price">Bear Case (5th pct)</div>
             <div class="stat-value" id="stat-p5">&mdash;</div>
@@ -904,10 +950,6 @@
           <div class="stat-card stat-card--gain">
             <div class="stat-label" title="Optimistic scenario — only 5% of simulations ended above this price">Bull Case (95th pct)</div>
             <div class="stat-value" id="stat-p95">&mdash;</div>
-          </div>
-          <div class="stat-card" id="stat-prob-card">
-            <div class="stat-label" title="Percentage of simulated paths that ended above today's price">Prob. of Gain</div>
-            <div class="stat-value" id="stat-prob">&mdash;</div>
           </div>
           <div class="stat-card stat-card--warn">
             <div class="stat-label" title="Annualized standard deviation — higher means more price uncertainty">Annual Volatility</div>
@@ -1057,7 +1099,13 @@
       document.getElementById(id).textContent = val;
     }
 
-    function showError(msg) {
+    function showError(msg, isTickerError) {
+      if (isTickerError) {
+        var group = document.getElementById('ticker-group');
+        var errEl = document.getElementById('ticker-error');
+        errEl.textContent = msg;
+        group.classList.add('has-error');
+      }
       var el = document.getElementById('error-msg');
       el.textContent = msg;
       el.classList.remove('hidden');
@@ -1065,6 +1113,9 @@
 
     function hideError() {
       document.getElementById('error-msg').classList.add('hidden');
+      var group = document.getElementById('ticker-group');
+      group.classList.remove('has-error');
+      document.getElementById('ticker-error').textContent = 'Enter a valid ticker (1\u20135 letters, e.g. AAPL)';
     }
 
     var simLoadingMessages = [
@@ -1108,17 +1159,35 @@
       if (on) { _cycleMessages(btLoadingMessages); } else { clearInterval(_loadingInterval); }
     }
 
+    /* ── Ticker validation ────────────────────────────────────────────────── */
+    function validateTicker() {
+      var val = document.getElementById('ticker').value.trim();
+      var valid = /^[A-Za-z]{1,5}$/.test(val);
+      var group = document.getElementById('ticker-group');
+      group.classList.toggle('has-error', !valid && val.length > 0);
+      document.getElementById('run-btn').disabled = !valid;
+      document.getElementById('backtest-btn').disabled = !valid;
+      return valid;
+    }
+
     /* ── Event binding ────────────────────────────────────────────────────── */
+    document.getElementById('ticker').addEventListener('blur', validateTicker);
+    document.getElementById('ticker').addEventListener('input', validateTicker);
+
     document.getElementById('simulations').addEventListener('input', function () {
       document.getElementById('sim-val').textContent = this.value;
     });
 
     document.getElementById('sim-form').addEventListener('submit', function (e) {
       e.preventDefault();
+      if (!validateTicker()) return;
       runSimulation();
     });
 
-    document.getElementById('backtest-btn').addEventListener('click', function () { runBacktest(); });
+    document.getElementById('backtest-btn').addEventListener('click', function () {
+      if (!validateTicker()) return;
+      runBacktest();
+    });
     document.getElementById('csv-btn').addEventListener('click', downloadCSV);
     document.getElementById('code-toggle-btn').addEventListener('click', toggleCode);
     document.getElementById('copy-btn').addEventListener('click', copyCode);
@@ -1145,7 +1214,7 @@
       var simulations = parseInt(document.getElementById('simulations').value, 10);
       var forecast_days = parseInt(document.getElementById('forecast_days').value, 10);
 
-      if (!ticker) { showError('Please enter a stock ticker symbol.'); return; }
+      if (!ticker || !validateTicker()) return;
 
       if (typeof Plotly === 'undefined') {
         showError('Charts are still loading. Please wait a moment and try again.');
@@ -1168,7 +1237,9 @@
         var data = await res.json();
 
         if (!res.ok || data.error) {
-          showError(data.error || 'An unexpected error occurred. Please try again.');
+          var errMsg = data.error || 'An unexpected error occurred. Please try again.';
+          var isTickerErr = /no data|not found|invalid.*ticker|unknown.*symbol/i.test(errMsg);
+          showError(errMsg, isTickerErr);
           return;
         }
 
@@ -1268,6 +1339,15 @@
       var cp = data.current_price;
       var medianUp = s.median_final >= cp;
 
+      // Summary line
+      var pctChange = ((s.median_final - cp) / cp * 100).toFixed(1);
+      var sign = medianUp ? '+' : '';
+      var horizonLabel = document.getElementById('forecast_days').selectedOptions[0].text;
+      var summaryEl = document.getElementById('results-summary');
+      summaryEl.textContent = data.ticker + ' median forecast is $' + s.median_final.toFixed(2) +
+        ' (' + sign + pctChange + '%) over ' + horizonLabel.toLowerCase() +
+        ', with a ' + (s.prob_gain * 100).toFixed(0) + '% probability of finishing above today\u2019s price.';
+
       setText('stat-current', '$' + cp.toFixed(2));
 
       var medianEl = document.getElementById('stat-median');
@@ -1311,7 +1391,7 @@
       var simulations = parseInt(document.getElementById('simulations').value, 10);
       var test_days = parseInt(document.getElementById('test_days').value, 10);
 
-      if (!ticker) { showError('Please enter a stock ticker symbol.'); return; }
+      if (!ticker || !validateTicker()) return;
 
       if (typeof Plotly === 'undefined') {
         showError('Charts are still loading. Please wait a moment and try again.');
@@ -1335,7 +1415,9 @@
 
         var data = await res.json();
         if (!res.ok || data.error) {
-          showError(data.error || 'Backtest failed. Please try again.');
+          var errMsg = data.error || 'Backtest failed. Please try again.';
+          var isTickerErr = /no data|not found|invalid.*ticker|unknown.*symbol/i.test(errMsg);
+          showError(errMsg, isTickerErr);
           return;
         }
 

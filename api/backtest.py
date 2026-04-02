@@ -302,6 +302,7 @@ class handler(BaseHTTPRequestHandler):
             ticker        = params.get("ticker", "AAPL").upper().strip()
             n_simulations = min(int(params.get("simulations", 500)), 1000)
             test_days     = min(int(params.get("test_days", 252)), 504)
+            manual_k      = params.get("manual_k")  # optional float override
 
             # Fetch enough history: test period + at least 1 year of training data
             # test_days/252 years of test + 2 years training, rounded up to next period
@@ -329,7 +330,8 @@ class handler(BaseHTTPRequestHandler):
             log_returns   = np.log(train / train.shift(1)).dropna().values
 
             # Calibration factor derived from training data only (no test data leakage)
-            calib_k, calib_meta = _compute_calib_factor(train)
+            auto_k, calib_meta = _compute_calib_factor(train)
+            calib_k = float(np.clip(manual_k, _K_MIN, _K_MAX)) if manual_k is not None else auto_k
 
             np.random.seed(None)
             paths, model = _simulate(log_returns, current_price, n_simulations, test_days)
@@ -353,6 +355,8 @@ class handler(BaseHTTPRequestHandler):
                 "ticker":        ticker,
                 "model":         model,
                 "calib_k":       round(calib_k, 3),
+                "auto_k":        round(auto_k, 3),
+                "manual_k":      round(float(manual_k), 3) if manual_k is not None else None,
                 "calibration":   calib_meta,
                 "test_days":     test_days,
                 "dates":         dates,

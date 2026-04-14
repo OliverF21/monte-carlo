@@ -227,6 +227,134 @@
       font-size: 0.875rem;
     }
 
+    /* ── Mode toggle (single / portfolio) ──────────────────────── */
+    .mode-toggle {
+      display: flex;
+      gap: 0;
+      margin-bottom: 14px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      width: fit-content;
+    }
+
+    .mode-toggle button {
+      padding: 7px 18px;
+      font: inherit;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      border: none;
+      cursor: pointer;
+      background: var(--surface-raised);
+      color: var(--text-tertiary);
+      transition: background 0.2s var(--ease-out), color 0.2s var(--ease-out);
+    }
+
+    .mode-toggle button.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .mode-toggle button:not(.active):hover {
+      background: var(--accent-soft);
+      color: var(--text);
+    }
+
+    /* ── Portfolio upload ───────────────────────────────────────── */
+    .portfolio-input { display: none; }
+    .portfolio-input.visible { display: block; }
+
+    .csv-drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius-sm);
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s var(--ease-out), background 0.2s var(--ease-out);
+      background: var(--surface-raised);
+    }
+
+    .csv-drop-zone:hover,
+    .csv-drop-zone.dragover {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .csv-drop-zone p {
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+    }
+
+    .csv-drop-zone .csv-hint {
+      font-size: 0.6875rem;
+      color: var(--text-tertiary);
+    }
+
+    .portfolio-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 0.8125rem;
+    }
+
+    .portfolio-table th {
+      text-align: left;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-tertiary);
+      padding: 6px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .portfolio-table td {
+      padding: 6px 10px;
+      border-bottom: 1px solid var(--border-subtle);
+      color: var(--text);
+    }
+
+    .portfolio-table td:first-child {
+      font-family: var(--font-mono);
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .portfolio-table td:last-child {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .portfolio-summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 8px;
+      font-size: 0.75rem;
+      color: var(--text-tertiary);
+    }
+
+    .portfolio-summary .weight-warn {
+      color: var(--amber);
+      font-weight: 500;
+    }
+
+    .portfolio-clear {
+      font: inherit;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--red);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 2px 4px;
+    }
+
+    .portfolio-clear:hover { text-decoration: underline; }
+
     /* ── Slider ──────────────────────────────────────────────────── */
     .slider-group {
       grid-column: 1 / -1;
@@ -838,12 +966,36 @@
         </div>
 
         <form id="sim-form">
+          <div class="mode-toggle">
+            <button type="button" id="mode-single" class="active">Single Stock</button>
+            <button type="button" id="mode-portfolio">Portfolio (CSV)</button>
+          </div>
+
           <div class="input-grid">
             <div class="input-group" id="ticker-group">
               <label for="ticker">Stock Ticker</label>
               <input type="text" id="ticker" value="AAPL" placeholder="e.g. AAPL" />
               <div class="input-hint">US stock symbols only</div>
               <div class="input-error" id="ticker-error">Enter a valid ticker (1–5 letters, e.g. AAPL)</div>
+            </div>
+
+            <div class="portfolio-input" id="portfolio-input" style="grid-column: 1 / -1;">
+              <label style="display:block;margin-bottom:6px;font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);">Portfolio CSV</label>
+              <div class="csv-drop-zone" id="csv-drop-zone">
+                <p>Drop a CSV file here or click to browse</p>
+                <span class="csv-hint">Format: ticker,weight &mdash; e.g. AAPL,0.40</span>
+                <input type="file" id="csv-file" accept=".csv,text/csv" style="display:none" />
+              </div>
+              <div id="portfolio-preview" style="display:none;">
+                <table class="portfolio-table">
+                  <thead><tr><th>Ticker</th><th>Weight</th></tr></thead>
+                  <tbody id="portfolio-tbody"></tbody>
+                </table>
+                <div class="portfolio-summary">
+                  <span id="portfolio-weight-status"></span>
+                  <button type="button" class="portfolio-clear" id="portfolio-clear">Clear</button>
+                </div>
+              </div>
             </div>
 
             <div class="input-group">
@@ -1068,6 +1220,8 @@
     /* ── State ─────────────────────────────────────────────────────────────── */
     var lastCsvData = null;
     var lastTicker = null;
+    var portfolioMode = false;
+    var portfolioData = null;  // [{ticker, weight}, ...]
 
     /* ── Chart color palette ──────────────────────────────────────────────── */
     var C = {
@@ -1159,8 +1313,99 @@
       if (on) { _cycleMessages(btLoadingMessages); } else { clearInterval(_loadingInterval); }
     }
 
+    /* ── Mode toggle (single / portfolio) ─────────────────────────────────── */
+    function setMode(mode) {
+      portfolioMode = (mode === 'portfolio');
+      document.getElementById('mode-single').classList.toggle('active', !portfolioMode);
+      document.getElementById('mode-portfolio').classList.toggle('active', portfolioMode);
+      document.getElementById('ticker-group').style.display = portfolioMode ? 'none' : '';
+      document.getElementById('portfolio-input').classList.toggle('visible', portfolioMode);
+
+      if (portfolioMode) {
+        var valid = portfolioData && portfolioData.length > 0;
+        document.getElementById('run-btn').disabled = !valid;
+        document.getElementById('backtest-btn').disabled = !valid;
+      } else {
+        validateTicker();
+      }
+    }
+
+    /* ── CSV parsing ──────────────────────────────────────────────────────── */
+    function parseCsv(text) {
+      var lines = text.trim().split(/\r?\n/);
+      var result = [];
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i].trim();
+        if (!line) continue;
+        // Skip header row if it looks like one
+        if (i === 0 && /^ticker/i.test(line)) continue;
+        var parts = line.split(/[,\t]+/);
+        if (parts.length < 2) continue;
+        var ticker = parts[0].trim().toUpperCase();
+        var weight = parseFloat(parts[1].trim());
+        if (!ticker || !/^[A-Za-z]{1,5}$/.test(ticker)) continue;
+        if (isNaN(weight) || weight <= 0) continue;
+        result.push({ ticker: ticker, weight: weight });
+      }
+      return result;
+    }
+
+    function renderPortfolioPreview(data) {
+      var tbody = document.getElementById('portfolio-tbody');
+      var preview = document.getElementById('portfolio-preview');
+      var dropZone = document.getElementById('csv-drop-zone');
+
+      if (!data || data.length === 0) {
+        preview.style.display = 'none';
+        dropZone.style.display = '';
+        portfolioData = null;
+        document.getElementById('run-btn').disabled = true;
+        document.getElementById('backtest-btn').disabled = true;
+        return;
+      }
+
+      portfolioData = data;
+      tbody.innerHTML = '';
+      var totalWeight = 0;
+      data.forEach(function (row) {
+        totalWeight += row.weight;
+        var tr = document.createElement('tr');
+        tr.innerHTML = '<td>' + row.ticker + '</td><td>' + (row.weight * 100).toFixed(1) + '%</td>';
+        tbody.appendChild(tr);
+      });
+
+      var status = document.getElementById('portfolio-weight-status');
+      var diff = Math.abs(totalWeight - 1.0);
+      if (diff > 0.01) {
+        status.innerHTML = '<span class="weight-warn">Weights sum to ' + (totalWeight * 100).toFixed(1) + '% — will be normalised to 100%</span>';
+      } else {
+        status.textContent = data.length + ' stocks \u00b7 weights sum to 100%';
+      }
+
+      dropZone.style.display = 'none';
+      preview.style.display = '';
+      document.getElementById('run-btn').disabled = false;
+      document.getElementById('backtest-btn').disabled = false;
+    }
+
+    function handleCsvFile(file) {
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        var parsed = parseCsv(e.target.result);
+        if (parsed.length === 0) {
+          showError('Could not parse portfolio from CSV. Expected format: ticker,weight (e.g. AAPL,0.40)');
+          return;
+        }
+        hideError();
+        renderPortfolioPreview(parsed);
+      };
+      reader.readAsText(file);
+    }
+
     /* ── Ticker validation ────────────────────────────────────────────────── */
     function validateTicker() {
+      if (portfolioMode) return portfolioData && portfolioData.length > 0;
       var val = document.getElementById('ticker').value.trim();
       var valid = /^[A-Za-z]{1,5}$/.test(val);
       var group = document.getElementById('ticker-group');
@@ -1171,6 +1416,35 @@
     }
 
     /* ── Event binding ────────────────────────────────────────────────────── */
+    document.getElementById('mode-single').addEventListener('click', function () { setMode('single'); });
+    document.getElementById('mode-portfolio').addEventListener('click', function () { setMode('portfolio'); });
+
+    /* CSV file input & drag-drop */
+    var csvDropZone = document.getElementById('csv-drop-zone');
+    var csvFileInput = document.getElementById('csv-file');
+
+    csvDropZone.addEventListener('click', function () { csvFileInput.click(); });
+    csvFileInput.addEventListener('change', function () { handleCsvFile(this.files[0]); });
+
+    csvDropZone.addEventListener('dragover', function (e) {
+      e.preventDefault();
+      csvDropZone.classList.add('dragover');
+    });
+    csvDropZone.addEventListener('dragleave', function () {
+      csvDropZone.classList.remove('dragover');
+    });
+    csvDropZone.addEventListener('drop', function (e) {
+      e.preventDefault();
+      csvDropZone.classList.remove('dragover');
+      if (e.dataTransfer.files.length) handleCsvFile(e.dataTransfer.files[0]);
+    });
+
+    document.getElementById('portfolio-clear').addEventListener('click', function () {
+      portfolioData = null;
+      renderPortfolioPreview(null);
+      csvFileInput.value = '';
+    });
+
     document.getElementById('ticker').addEventListener('blur', validateTicker);
     document.getElementById('ticker').addEventListener('input', validateTicker);
 
@@ -1209,12 +1483,20 @@
 
     /* ── Simulation ───────────────────────────────────────────────────────── */
     async function runSimulation() {
-      var ticker = document.getElementById('ticker').value.trim().toUpperCase();
       var lookback = document.getElementById('lookback').value;
       var simulations = parseInt(document.getElementById('simulations').value, 10);
       var forecast_days = parseInt(document.getElementById('forecast_days').value, 10);
 
-      if (!ticker || !validateTicker()) return;
+      if (!validateTicker()) return;
+
+      var payload = { lookback: lookback, simulations: simulations, forecast_days: forecast_days };
+      if (portfolioMode && portfolioData) {
+        payload.portfolio = portfolioData;
+      } else {
+        var ticker = document.getElementById('ticker').value.trim().toUpperCase();
+        if (!ticker) return;
+        payload.ticker = ticker;
+      }
 
       if (typeof Plotly === 'undefined') {
         showError('Charts are still loading. Please wait a moment and try again.');
@@ -1231,7 +1513,7 @@
         var res = await fetch('/api/simulate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ticker: ticker, lookback: lookback, simulations: simulations, forecast_days: forecast_days }),
+          body: JSON.stringify(payload),
         });
 
         var data = await res.json();
@@ -1244,7 +1526,7 @@
         }
 
         lastCsvData = data.csv_data;
-        lastTicker = data.ticker;
+        lastTicker = data.is_portfolio ? 'portfolio' : data.ticker;
 
         renderChart(data);
         renderStats(data);
@@ -1267,6 +1549,9 @@
       var ticker = data.ticker, dates = data.dates, paths = data.paths;
       var percentile_5 = data.percentile_5, percentile_50 = data.percentile_50, percentile_95 = data.percentile_95;
       var current_price = data.current_price, stats = data.stats;
+      var isPortfolio = data.is_portfolio;
+      var prefix = isPortfolio ? '' : '$';
+      var hoverFmt = isPortfolio ? '%{y:.2f}' : '$%{y:.2f}';
       var traces = [];
 
       paths.forEach(function (path) {
@@ -1281,7 +1566,7 @@
         x: dates, y: percentile_5, name: 'Bear (5th)',
         type: 'scatter', mode: 'lines',
         line: { color: C.bear, dash: 'dot', width: 1.5 },
-        hovertemplate: '<b>5th pct</b>: $%{y:.2f}<extra></extra>',
+        hovertemplate: '<b>5th pct</b>: ' + prefix + '%{y:.2f}<extra></extra>',
       });
 
       traces.push({
@@ -1289,23 +1574,26 @@
         type: 'scatter', mode: 'lines',
         line: { color: C.bull, dash: 'dot', width: 1.5 },
         fill: 'tonexty', fillcolor: C.bandFill,
-        hovertemplate: '<b>95th pct</b>: $%{y:.2f}<extra></extra>',
+        hovertemplate: '<b>95th pct</b>: ' + prefix + '%{y:.2f}<extra></extra>',
       });
 
       traces.push({
         x: dates, y: percentile_50, name: 'Median',
         type: 'scatter', mode: 'lines',
         line: { color: C.median, width: 2.5 },
-        hovertemplate: '<b>Median</b>: $%{y:.2f}<extra></extra>',
+        hovertemplate: '<b>Median</b>: ' + prefix + '%{y:.2f}<extra></extra>',
       });
 
       var forecastLabel = document.getElementById('forecast_days').selectedOptions[0].text;
       var lookbackLabel = document.getElementById('lookback').selectedOptions[0].text;
       var fittedDays = lookbackToDays(document.getElementById('lookback').value);
 
-      document.getElementById('chart-title').textContent = ticker + ' Forecast';
+      document.getElementById('chart-title').textContent = isPortfolio ? 'Portfolio Forecast' : ticker + ' Forecast';
       document.getElementById('chart-subtitle').textContent =
+        (isPortfolio ? ticker + ' \u00b7 ' : '') +
         lookbackLabel + ' lookback \u00b7 ' + forecastLabel + ' forecast \u00b7 ~' + fittedDays + ' trading days';
+
+      var spotText = isPortfolio ? 'Start 100.00' : 'Spot $' + current_price.toFixed(2);
 
       var layout = {
         margin: { t: 16, r: 16, b: 44, l: 56 },
@@ -1314,7 +1602,7 @@
         hovermode: 'x unified',
         font: { color: C.tick, family: C.font, size: 12 },
         xaxis: { showgrid: true, gridcolor: C.grid, tickfont: { size: 10, color: C.tick }, zeroline: false },
-        yaxis: { showgrid: true, gridcolor: C.grid, tickfont: { size: 10, color: C.tick }, tickprefix: '$', zeroline: false },
+        yaxis: { showgrid: true, gridcolor: C.grid, tickfont: { size: 10, color: C.tick }, tickprefix: prefix, zeroline: false },
         legend: { orientation: 'h', y: -0.15, x: 0.5, xanchor: 'center', font: { size: 10, color: C.legend } },
         shapes: [{
           type: 'line', x0: dates[0], x1: dates[dates.length - 1],
@@ -1323,7 +1611,7 @@
         }],
         annotations: [{
           x: dates[Math.min(4, dates.length - 1)], y: current_price,
-          text: 'Spot $' + current_price.toFixed(2),
+          text: spotText,
           showarrow: false, yshift: 12,
           font: { size: 10, color: C.spotLabel },
         }],
@@ -1338,21 +1626,29 @@
       var s = data.stats;
       var cp = data.current_price;
       var medianUp = s.median_final >= cp;
+      var isPortfolio = data.is_portfolio;
+      var fmt = function (v) { return isPortfolio ? v.toFixed(2) : '$' + v.toFixed(2); };
 
       // Summary line
       var pctChange = ((s.median_final - cp) / cp * 100).toFixed(1);
       var sign = medianUp ? '+' : '';
       var horizonLabel = document.getElementById('forecast_days').selectedOptions[0].text;
       var summaryEl = document.getElementById('results-summary');
-      summaryEl.textContent = data.ticker + ' median forecast is $' + s.median_final.toFixed(2) +
+      var label = isPortfolio ? 'Portfolio' : data.ticker;
+      summaryEl.textContent = label + ' median forecast is ' + fmt(s.median_final) +
         ' (' + sign + pctChange + '%) over ' + horizonLabel.toLowerCase() +
-        ', with a ' + (s.prob_gain * 100).toFixed(0) + '% probability of finishing above today\u2019s price.';
+        ', with a ' + (s.prob_gain * 100).toFixed(0) + '% probability of finishing above ' +
+        (isPortfolio ? 'the starting value.' : 'today\u2019s price.');
 
-      setText('stat-current', '$' + cp.toFixed(2));
+      // Update stat labels for portfolio mode
+      document.querySelector('#results-card .stat-card--neutral .stat-label').textContent =
+        isPortfolio ? 'Starting Value' : 'Current Price';
+
+      setText('stat-current', fmt(cp));
 
       var medianEl = document.getElementById('stat-median');
       medianEl.textContent = '';
-      medianEl.appendChild(document.createTextNode('$' + s.median_final.toFixed(2) + ' '));
+      medianEl.appendChild(document.createTextNode(fmt(s.median_final) + ' '));
       var arrow = document.createElement('span');
       arrow.className = medianUp ? 'val-up' : 'val-down';
       arrow.textContent = medianUp ? '\u25B2' : '\u25BC';
@@ -1363,8 +1659,8 @@
       document.getElementById('stat-median-card').className = 'stat-card ' + (medianUp ? 'stat-card--gain' : 'stat-card--loss');
       document.getElementById('stat-prob-card').className = 'stat-card ' + (s.prob_gain >= 0.5 ? 'stat-card--gain' : 'stat-card--loss');
 
-      setText('stat-p5', '$' + s.p5_final.toFixed(2));
-      setText('stat-p95', '$' + s.p95_final.toFixed(2));
+      setText('stat-p5', fmt(s.p5_final));
+      setText('stat-p95', fmt(s.p95_final));
       setText('stat-prob', (s.prob_gain * 100).toFixed(1) + '%');
       setText('stat-vol', (s.annual_vol * 100).toFixed(1) + '%');
       setText('stat-var', (s.var_95_1day * 100).toFixed(2) + '%');
@@ -1387,11 +1683,19 @@
 
     /* ── Backtest ──────────────────────────────────────────────────────────── */
     async function runBacktest(manualK) {
-      var ticker = document.getElementById('ticker').value.trim().toUpperCase();
       var simulations = parseInt(document.getElementById('simulations').value, 10);
       var test_days = parseInt(document.getElementById('test_days').value, 10);
 
-      if (!ticker || !validateTicker()) return;
+      if (!validateTicker()) return;
+
+      var payload = { simulations: simulations, test_days: test_days };
+      if (portfolioMode && portfolioData) {
+        payload.portfolio = portfolioData;
+      } else {
+        var ticker = document.getElementById('ticker').value.trim().toUpperCase();
+        if (!ticker) return;
+        payload.ticker = ticker;
+      }
 
       if (typeof Plotly === 'undefined') {
         showError('Charts are still loading. Please wait a moment and try again.');
@@ -1403,7 +1707,6 @@
       document.getElementById('backtest-card').classList.add('hidden');
       document.getElementById('empty-state').classList.add('hidden');
 
-      var payload = { ticker: ticker, simulations: simulations, test_days: test_days };
       if (manualK != null) payload.manual_k = manualK;
 
       try {

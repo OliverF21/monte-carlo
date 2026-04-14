@@ -281,6 +281,46 @@ def _apply_calib(paths, k):
     return paths[:, 0:1] * np.exp(log_ret * k)
 
 
+def _fetch_portfolio(portfolio, fetch_period):
+    """Fetch data for every ticker, align dates, return synthetic close series."""
+    tickers = [p["ticker"].upper().strip() for p in portfolio]
+    weights = np.array([float(p["weight"]) for p in portfolio])
+    w_sum = weights.sum()
+    if w_sum <= 0:
+        raise ValueError("Portfolio weights must be positive and sum to > 0.")
+    weights = weights / w_sum
+
+    raw = yf.download(tickers, period=fetch_period, auto_adjust=True,
+                      progress=False, threads=True)
+    if raw.empty:
+        raise ValueError("No data returned for portfolio tickers.")
+
+    if isinstance(raw.columns, pd.MultiIndex):
+        close_df = raw["Close"]
+    else:
+        close_df = raw[["Close"]].copy()
+        close_df.columns = tickers
+
+    close_df = close_df.dropna(axis=1, how="all")
+    missing = set(tickers) - set(close_df.columns)
+    if missing:
+        raise ValueError(f"Tickers not found or no data: {', '.join(sorted(missing))}")
+
+    close_df = close_df.dropna()
+    close_df = close_df[tickers]
+
+    log_ret_df = np.log(close_df / close_df.shift(1)).dropna()
+    port_log_ret = (log_ret_df.values * weights).sum(axis=1)
+    cum_ret = np.concatenate([[0.0], np.cumsum(port_log_ret)])
+    port_close = 100.0 * np.exp(cum_ret)
+
+    port_series = pd.Series(port_close, index=close_df.index, name="Close")
+
+    parts = [f"{t} {w*100:.0f}%" for t, w in zip(tickers, weights)]
+    label = " / ".join(parts)
+    return port_series, label
+
+
 class handler(BaseHTTPRequestHandler):
 
     def send_cors_headers(self):
@@ -299,13 +339,13 @@ class handler(BaseHTTPRequestHandler):
             body = self.rfile.read(content_length)
             params = json.loads(body)
 
+            portfolio     = params.get("portfolio")
             ticker        = params.get("ticker", "AAPL").upper().strip()
             n_simulations = min(int(params.get("simulations", 500)), 1000)
             test_days     = min(int(params.get("test_days", 252)), 504)
             manual_k      = params.get("manual_k")  # optional float override
 
             # Fetch enough history: test period + at least 1 year of training data
-            # test_days/252 years of test + 2 years training, rounded up to next period
             total_years = test_days / 252 + 2
             if total_years <= 3:
                 fetch_period = "3y"
@@ -314,15 +354,27 @@ class handler(BaseHTTPRequestHandler):
             else:
                 fetch_period = "10y"
 
-            hist = yf.download(ticker, period=fetch_period, auto_adjust=True,
-                               progress=False, threads=False)
-            if hist.empty or len(hist) < test_days + 100:
-                self._send_error(400, f"Insufficient data for '{ticker}'.")
-                return
-            if isinstance(hist.columns, pd.MultiIndex):
-                hist.columns = hist.columns.get_level_values(0)
+            is_portfolio = portfolio and isinstance(portfolio, list) and len(portfolio) > 0
 
-            close = hist["Close"].dropna()
+            if is_portfolio:
+                try:
+                    close, label = _fetch_portfolio(portfolio, fetch_period)
+                except ValueError as ve:
+                    self._send_error(400, str(ve))
+                    return
+                ticker = label
+                if len(close) < test_days + 100:
+                    self._send_error(400, "Insufficient overlapping history for portfolio backtest.")
+                    return
+            else:
+                hist = yf.download(ticker, period=fetch_period, auto_adjust=True,
+                                   progress=False, threads=False)
+                if hist.empty or len(hist) < test_days + 100:
+                    self._send_error(400, f"Insufficient data for '{ticker}'.")
+                    return
+                if isinstance(hist.columns, pd.MultiIndex):
+                    hist.columns = hist.columns.get_level_values(0)
+                close = hist["Close"].dropna()
             train = close.iloc[:-test_days]
             test  = close.iloc[-(test_days + 1):]
 

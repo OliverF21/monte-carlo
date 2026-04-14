@@ -192,6 +192,75 @@ def _apply_calib(paths, k):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Portfolio helpers
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _fetch_portfolio(portfolio, lookback):
+    """
+    Fetch data for every ticker in the portfolio, align dates, and return
+    a synthetic close-price series (indexed to 100) and weighted log returns.
+
+    portfolio: list of {"ticker": "AAPL", "weight": 0.4}
+    Returns: (close_series, log_returns_array, label, last_index_entry)
+    """
+    tickers = [p["ticker"].upper().strip() for p in portfolio]
+    weights = np.array([float(p["weight"]) for p in portfolio])
+
+    # Normalise weights to sum to 1
+    w_sum = weights.sum()
+    if w_sum <= 0:
+        raise ValueError("Portfolio weights must be positive and sum to > 0.")
+    weights = weights / w_sum
+
+    # Download all tickers at once
+    raw = yf.download(tickers, period=lookback, auto_adjust=True,
+                      progress=False, threads=True)
+
+    if raw.empty:
+        raise ValueError("No data returned for portfolio tickers.")
+
+    # yf.download returns MultiIndex columns (Price, Ticker) for multiple tickers
+    if isinstance(raw.columns, pd.MultiIndex):
+        close_df = raw["Close"]
+    else:
+        # Single ticker edge case
+        close_df = raw[["Close"]].copy()
+        close_df.columns = tickers
+
+    # Drop any ticker columns that are entirely NaN
+    close_df = close_df.dropna(axis=1, how="all")
+    missing = set(tickers) - set(close_df.columns)
+    if missing:
+        raise ValueError(f"Tickers not found or no data: {', '.join(sorted(missing))}")
+
+    # Use only rows where ALL tickers have data
+    close_df = close_df.dropna()
+    if len(close_df) < 30:
+        raise ValueError("Insufficient overlapping history for portfolio (need >= 30 days).")
+
+    # Reorder columns to match input order and rebuild aligned weight vector
+    close_df = close_df[tickers]
+
+    # Compute daily log returns per ticker
+    log_ret_df = np.log(close_df / close_df.shift(1)).dropna()
+
+    # Weighted portfolio log returns (approximate for small daily returns)
+    port_log_ret = (log_ret_df.values * weights).sum(axis=1)
+
+    # Build synthetic portfolio close price indexed to 100
+    cum_ret = np.concatenate([[0.0], np.cumsum(port_log_ret)])
+    port_close = 100.0 * np.exp(cum_ret)
+
+    port_series = pd.Series(port_close, index=close_df.index, name="Close")
+
+    # Build label like "AAPL 40% / MSFT 30% / GOOGL 30%"
+    parts = [f"{t} {w*100:.0f}%" for t, w in zip(tickers, weights)]
+    label = " / ".join(parts)
+
+    return port_series, port_log_ret, label, close_df.index[-1]
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Handler
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -213,23 +282,38 @@ class handler(BaseHTTPRequestHandler):
             body = self.rfile.read(content_length)
             params = json.loads(body)
 
+            portfolio     = params.get("portfolio")  # list of {ticker, weight}
             ticker        = params.get("ticker", "AAPL").upper().strip()
             lookback      = params.get("lookback", "2y")
             n_simulations = min(int(params.get("simulations", 500)), 1000)
             forecast_days = min(int(params.get("forecast_days", 252)), 504)
 
             # ── 1. Fetch historical data ──────────────────────────────────────
-            hist = yf.download(ticker, period=lookback, auto_adjust=True,
-                               progress=False, threads=False)
-            if hist.empty or len(hist) < 30:
-                self._send_error(400, f"Ticker '{ticker}' not found or has insufficient history.")
-                return
-            if isinstance(hist.columns, pd.MultiIndex):
-                hist.columns = hist.columns.get_level_values(0)
+            is_portfolio = portfolio and isinstance(portfolio, list) and len(portfolio) > 0
 
-            close         = hist["Close"].dropna()
-            current_price = float(close.iloc[-1])
-            log_returns   = np.log(close / close.shift(1)).dropna().values
+            if is_portfolio:
+                try:
+                    close, port_log_ret, label, last_idx = _fetch_portfolio(portfolio, lookback)
+                except ValueError as ve:
+                    self._send_error(400, str(ve))
+                    return
+                ticker        = label
+                current_price = float(close.iloc[-1])  # 100-indexed
+                log_returns   = port_log_ret
+                last_date     = last_idx.to_pydatetime()
+            else:
+                hist = yf.download(ticker, period=lookback, auto_adjust=True,
+                                   progress=False, threads=False)
+                if hist.empty or len(hist) < 30:
+                    self._send_error(400, f"Ticker '{ticker}' not found or has insufficient history.")
+                    return
+                if isinstance(hist.columns, pd.MultiIndex):
+                    hist.columns = hist.columns.get_level_values(0)
+
+                close         = hist["Close"].dropna()
+                current_price = float(close.iloc[-1])
+                log_returns   = np.log(close / close.shift(1)).dropna().values
+                last_date     = hist.index[-1].to_pydatetime()
 
             # ── 2. Simulate paths ─────────────────────────────────────────────
             np.random.seed(None)
@@ -249,7 +333,6 @@ class handler(BaseHTTPRequestHandler):
             model_info['calib_k'] = round(calib_k, 3)
 
             # ── 4. Date index ─────────────────────────────────────────────────
-            last_date    = hist.index[-1].to_pydatetime()
             future_dates = pd.bdate_range(start=last_date, periods=forecast_days + 1)
             dates        = [d.strftime("%Y-%m-%d") for d in future_dates]
 
@@ -288,6 +371,7 @@ class handler(BaseHTTPRequestHandler):
                 "ticker":        ticker,
                 "current_price": round(current_price, 4),
                 "forecast_days": forecast_days,
+                "is_portfolio":  is_portfolio,
                 "dates":         dates,
                 "paths":         display_paths,
                 "percentile_5":  p5,

@@ -183,12 +183,16 @@ def _compute_calib_factor(close, n_sims=200):
 
 
 def _apply_calib(paths, k):
-    """Scale the log-returns of every simulation path by factor k.
-    Equivalent to multiplying sigma by k without rerunning the simulation."""
+    """Scale only the volatility component of each path by factor k,
+    preserving the original drift.  The cross-simulation mean at each
+    timestep estimates drift; deviations from that mean are pure vol."""
     if abs(k - 1.0) < 0.02:
         return paths
-    log_ret = np.log(paths / paths[:, 0:1])   # (n_sims, n_days+1)
-    return paths[:, 0:1] * np.exp(log_ret * k)
+    start   = paths[:, 0:1]
+    log_ret = np.log(paths / start)                       # (n_sims, n_days+1)
+    drift   = log_ret.mean(axis=0, keepdims=True)         # (1, n_days+1)
+    scaled  = drift + (log_ret - drift) * k               # scale vol, keep drift
+    return start * np.exp(scaled)
 
 
 # ─────────────────────────────────────────────────────────────────────────────

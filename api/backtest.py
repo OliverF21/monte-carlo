@@ -275,10 +275,14 @@ def _compute_calib_factor(close, n_sims=100):
 
 
 def _apply_calib(paths, k):
+    """Scale only the volatility component, preserving drift."""
     if abs(k - 1.0) < 0.02:
         return paths
-    log_ret = np.log(paths / paths[:, 0:1])
-    return paths[:, 0:1] * np.exp(log_ret * k)
+    start   = paths[:, 0:1]
+    log_ret = np.log(paths / start)
+    drift   = log_ret.mean(axis=0, keepdims=True)
+    scaled  = drift + (log_ret - drift) * k
+    return start * np.exp(scaled)
 
 
 def _fetch_portfolio(portfolio, fetch_period):

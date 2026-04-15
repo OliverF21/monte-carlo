@@ -327,7 +327,7 @@ class handler(BaseHTTPRequestHandler):
             portfolio     = params.get("portfolio")  # list of {ticker, weight}
             ticker        = params.get("ticker", "AAPL").upper().strip()
             lookback      = params.get("lookback", "2y")
-            n_simulations = min(int(params.get("simulations", 500)), 1000)
+            n_simulations = min(int(params.get("simulations", 500)), 10000)
             forecast_days = min(int(params.get("forecast_days", 252)), 504)
 
             # ── 1. Fetch historical data ──────────────────────────────────────

@@ -1049,7 +1049,7 @@
                 <label for="simulations">Simulations</label>
                 <span class="slider-val" id="sim-val">500</span>
               </div>
-              <input type="range" id="simulations" min="100" max="1000" step="100" value="500" />
+              <input type="range" id="simulations" min="100" max="10000" step="100" value="500" />
             </div>
           </div>
 
@@ -2209,7 +2209,7 @@
       '',
       '            ticker        = params.get("ticker", "AAPL").upper().strip()',
       '            lookback      = params.get("lookback", "2y")',
-      '            n_simulations = min(int(params.get("simulations", 500)), 1000)',
+      '            n_simulations = min(int(params.get("simulations", 500)), 10000)',
       '            forecast_days = min(int(params.get("forecast_days", 252)), 504)',
       '',
       '            # \u2500\u2500 1. Fetch historical data \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500',

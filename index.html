@@ -640,6 +640,29 @@
     .stat-card--neutral { border-left: 3px solid var(--accent); }
     .stat-card--warn { border-left: 3px solid var(--amber); }
 
+    /* ── Risk Analysis section ─────────────────────────────────── */
+    .risk-section { margin-top: 20px; }
+
+    .risk-section-head {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .risk-section-title {
+      font-size: 0.8125rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-secondary);
+      margin: 0;
+    }
+
+    .stats-grid--risk {
+      grid-template-columns: repeat(5, 1fr);
+    }
+
     /* ── Section accents ────────────────────────────────────────── */
     #results-card {
       border-top: 3px solid var(--accent);
@@ -928,6 +951,7 @@
       .input-grid { grid-template-columns: 1fr 1fr; }
       .stats-grid { grid-template-columns: 1fr 1fr; }
       .stats-grid--secondary { grid-template-columns: repeat(3, 1fr); }
+      .stats-grid--risk { grid-template-columns: repeat(3, 1fr); }
       #chart, #backtest-chart { height: 300px; }
     }
 
@@ -935,7 +959,7 @@
       .page-shell { padding: 16px 14px 32px; }
       header { padding: 20px; }
       .card { padding: 18px; }
-      .input-grid, .stats-grid, .stats-grid--secondary { grid-template-columns: 1fr; }
+      .input-grid, .stats-grid, .stats-grid--secondary, .stats-grid--risk { grid-template-columns: 1fr; }
       .coverage-bar-wrap { grid-template-columns: 1fr; }
       .slider-group { grid-column: auto; }
       .backtest-row { flex-direction: column; align-items: stretch; }
@@ -1114,6 +1138,35 @@
           <div class="stat-card stat-card--neutral">
             <div class="stat-label" title="Sigma multiplier for confidence bands — 1.00x is perfectly calibrated, above means bands were widened">Calibration</div>
             <div class="stat-value" id="stat-calib">&mdash;</div>
+          </div>
+        </div>
+
+        <div id="risk-section" class="risk-section">
+          <div class="risk-section-head">
+            <h3 class="risk-section-title">Risk Analysis</h3>
+            <span class="section-meta">Derived from simulated paths</span>
+          </div>
+          <div class="stats-grid stats-grid--risk">
+            <div class="stat-card stat-card--loss">
+              <div class="stat-label" title="Maximum expected loss at the forecast horizon with 95% confidence, based on simulated price paths">Horizon VaR (95%)</div>
+              <div class="stat-value" id="stat-risk-var">&mdash;</div>
+            </div>
+            <div class="stat-card stat-card--loss">
+              <div class="stat-label" title="Average loss in the worst 5% of simulated scenarios — captures tail risk severity beyond VaR">Expected Shortfall</div>
+              <div class="stat-value" id="stat-risk-cvar">&mdash;</div>
+            </div>
+            <div class="stat-card stat-card--warn">
+              <div class="stat-label" title="Median peak-to-trough drawdown across all simulated paths during the forecast period">Median Max Drawdown</div>
+              <div class="stat-value" id="stat-risk-dd-med">&mdash;</div>
+            </div>
+            <div class="stat-card stat-card--warn">
+              <div class="stat-label" title="Worst-case max drawdown (95th percentile) — only 5% of simulated paths had a worse drawdown">Worst Drawdown (95th)</div>
+              <div class="stat-value" id="stat-risk-dd-p95">&mdash;</div>
+            </div>
+            <div class="stat-card" id="stat-sharpe-card">
+              <div class="stat-label" title="Annualized return per unit of risk from simulated paths — higher is better, above 1.0 is strong">Sharpe Ratio</div>
+              <div class="stat-value" id="stat-risk-sharpe">&mdash;</div>
+            </div>
           </div>
         </div>
 
@@ -1530,6 +1583,7 @@
 
         renderChart(data);
         renderStats(data);
+        renderRiskMetrics(data);
 
         var resultsCard = document.getElementById('results-card');
         resultsCard.classList.remove('hidden');
@@ -1678,6 +1732,30 @@
       } else {
         calibEl.textContent = '1.00x';
         calibEl.className = 'stat-value';
+      }
+    }
+
+    /* ── Risk metrics rendering ───────────────────────────────────────────── */
+    function renderRiskMetrics(data) {
+      var r = data.risk;
+      var section = document.getElementById('risk-section');
+      if (!r) { section.style.display = 'none'; return; }
+      section.style.display = '';
+
+      setText('stat-risk-var', (r.horizon_var_5 * 100).toFixed(1) + '%');
+      setText('stat-risk-cvar', (r.horizon_cvar_5 * 100).toFixed(1) + '%');
+      setText('stat-risk-dd-med', (r.max_drawdown_median * 100).toFixed(1) + '%');
+      setText('stat-risk-dd-p95', (r.max_drawdown_p95 * 100).toFixed(1) + '%');
+      setText('stat-risk-sharpe', r.sharpe_ratio.toFixed(2));
+
+      // Dynamic Sharpe coloring
+      var sharpeCard = document.getElementById('stat-sharpe-card');
+      if (r.sharpe_ratio >= 0.5) {
+        sharpeCard.className = 'stat-card stat-card--gain';
+      } else if (r.sharpe_ratio < 0) {
+        sharpeCard.className = 'stat-card stat-card--loss';
+      } else {
+        sharpeCard.className = 'stat-card stat-card--warn';
       }
     }
 

@@ -196,6 +196,44 @@ def _apply_calib(paths, k):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Risk metrics (derived from simulated paths)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _compute_risk_metrics(paths, current_price, forecast_days):
+    """Derive portfolio/stock risk metrics from the calibrated simulation paths."""
+    final_prices  = paths[:, -1]
+    final_returns = final_prices / current_price - 1.0
+
+    # Horizon VaR (95%): loss exceeded only 5% of the time
+    var_5 = -float(np.percentile(final_returns, 5))
+
+    # CVaR / Expected Shortfall: mean loss in the worst 5%
+    cutoff = np.percentile(final_returns, 5)
+    tail   = final_returns[final_returns <= cutoff]
+    cvar_5 = -float(np.mean(tail)) if len(tail) > 0 else var_5
+
+    # Max drawdown per path (vectorized)
+    running_max = np.maximum.accumulate(paths, axis=1)
+    drawdowns   = (running_max - paths) / running_max
+    max_dd      = drawdowns.max(axis=1)
+
+    # Sharpe ratio (annualized, risk-free = 0)
+    log_total  = np.log(final_prices / current_price)
+    ann_factor = 252.0 / forecast_days
+    mean_ann   = float(np.mean(log_total)) * ann_factor
+    vol_ann    = float(np.std(log_total)) * np.sqrt(ann_factor)
+    sharpe     = round(mean_ann / vol_ann, 2) if vol_ann > 1e-8 else 0.0
+
+    return {
+        'horizon_var_5':       round(var_5, 4),
+        'horizon_cvar_5':      round(cvar_5, 4),
+        'max_drawdown_median': round(float(np.median(max_dd)), 4),
+        'max_drawdown_p95':    round(float(np.percentile(max_dd, 95)), 4),
+        'sharpe_ratio':        sharpe,
+    }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Portfolio helpers
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -336,6 +374,9 @@ class handler(BaseHTTPRequestHandler):
             paths = _apply_calib(paths, calib_k)
             model_info['calib_k'] = round(calib_k, 3)
 
+            # ── 3. Risk metrics ──────────────────────────────────────────────
+            risk = _compute_risk_metrics(paths, current_price, forecast_days)
+
             # ── 4. Date index ─────────────────────────────────────────────────
             future_dates = pd.bdate_range(start=last_date, periods=forecast_days + 1)
             dates        = [d.strftime("%Y-%m-%d") for d in future_dates]
@@ -382,6 +423,7 @@ class handler(BaseHTTPRequestHandler):
                 "percentile_50": p50,
                 "percentile_95": p95,
                 "stats":         stats,
+                "risk":          risk,
                 "csv_data":      csv_data,
             }
 

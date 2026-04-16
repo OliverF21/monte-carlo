@@ -1013,12 +1013,12 @@
               <label style="display:block;margin-bottom:6px;font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);">Portfolio CSV</label>
               <div class="csv-drop-zone" id="csv-drop-zone">
                 <p>Drop a CSV file here or click to browse</p>
-                <span class="csv-hint">Format: ticker,weight &mdash; e.g. AAPL,0.40</span>
+                <span class="csv-hint">Shares: ticker,shares &mdash; e.g. AAPL,100 &nbsp;&nbsp;|&nbsp;&nbsp; Weights: ticker,weight &mdash; e.g. AAPL,0.40</span>
                 <input type="file" id="csv-file" accept=".csv,text/csv" style="display:none" />
               </div>
               <div id="portfolio-preview" style="display:none;">
                 <table class="portfolio-table">
-                  <thead><tr><th>Ticker</th><th>Weight</th></tr></thead>
+                  <thead><tr><th>Ticker</th><th id="portfolio-col-header">Shares</th></tr></thead>
                   <tbody id="portfolio-tbody"></tbody>
                 </table>
                 <div class="portfolio-summary">
@@ -1393,24 +1393,41 @@
     function parseCsv(text) {
       var lines = text.trim().split(/\r?\n/);
       var result = [];
+      var sharesMode = false;
+
       for (var i = 0; i < lines.length; i++) {
         var line = lines[i].trim();
         if (!line) continue;
-        // Skip header row if it looks like one
-        if (i === 0 && /^ticker/i.test(line)) continue;
+
+        // Header row: detect mode from column name, then skip
+        if (i === 0 && /^ticker/i.test(line)) {
+          sharesMode = /shares/i.test(line);
+          continue;
+        }
+
         var parts = line.split(/[,\t]+/);
         if (parts.length < 2) continue;
         var ticker = parts[0].trim().toUpperCase();
-        var weight = parseFloat(parts[1].trim());
+        var value  = parseFloat(parts[1].trim());
         if (!ticker || !/^[A-Za-z]{1,5}$/.test(ticker)) continue;
-        if (isNaN(weight) || weight <= 0) continue;
-        result.push({ ticker: ticker, weight: weight });
+        if (isNaN(value) || value <= 0) continue;
+
+        // Auto-detect shares mode from values when no header: any value > 1
+        if (!sharesMode && value > 1.0) sharesMode = true;
+
+        result.push({ ticker: ticker, _value: value });
       }
-      return result;
+
+      // Convert raw values to the correct field name
+      return result.map(function (r) {
+        var obj = { ticker: r.ticker };
+        obj[sharesMode ? 'shares' : 'weight'] = r._value;
+        return obj;
+      });
     }
 
     function renderPortfolioPreview(data) {
-      var tbody = document.getElementById('portfolio-tbody');
+      var tbody   = document.getElementById('portfolio-tbody');
       var preview = document.getElementById('portfolio-preview');
       var dropZone = document.getElementById('csv-drop-zone');
 
@@ -1424,21 +1441,34 @@
       }
 
       portfolioData = data;
+      var sharesMode = 'shares' in data[0];
+
+      // Update column header
+      document.getElementById('portfolio-col-header').textContent = sharesMode ? 'Shares' : 'Weight';
+
       tbody.innerHTML = '';
       var totalWeight = 0;
       data.forEach(function (row) {
-        totalWeight += row.weight;
         var tr = document.createElement('tr');
-        tr.innerHTML = '<td>' + row.ticker + '</td><td>' + (row.weight * 100).toFixed(1) + '%</td>';
+        if (sharesMode) {
+          tr.innerHTML = '<td>' + row.ticker + '</td><td>' + row.shares.toLocaleString() + '</td>';
+        } else {
+          totalWeight += row.weight;
+          tr.innerHTML = '<td>' + row.ticker + '</td><td>' + (row.weight * 100).toFixed(1) + '%</td>';
+        }
         tbody.appendChild(tr);
       });
 
       var status = document.getElementById('portfolio-weight-status');
-      var diff = Math.abs(totalWeight - 1.0);
-      if (diff > 0.01) {
-        status.innerHTML = '<span class="weight-warn">Weights sum to ' + (totalWeight * 100).toFixed(1) + '% — will be normalised to 100%</span>';
+      if (sharesMode) {
+        status.textContent = data.length + ' stocks \u00b7 weights derived from current market value';
       } else {
-        status.textContent = data.length + ' stocks \u00b7 weights sum to 100%';
+        var diff = Math.abs(totalWeight - 1.0);
+        if (diff > 0.01) {
+          status.innerHTML = '<span class="weight-warn">Weights sum to ' + (totalWeight * 100).toFixed(1) + '% \u2014 will be normalised to 100%</span>';
+        } else {
+          status.textContent = data.length + ' stocks \u00b7 weights sum to 100%';
+        }
       }
 
       dropZone.style.display = 'none';
@@ -1453,7 +1483,7 @@
       reader.onload = function (e) {
         var parsed = parseCsv(e.target.result);
         if (parsed.length === 0) {
-          showError('Could not parse portfolio from CSV. Expected format: ticker,weight (e.g. AAPL,0.40)');
+          showError('Could not parse portfolio from CSV. Use ticker,shares (e.g. AAPL,100) or ticker,weight (e.g. AAPL,0.40)');
           return;
         }
         hideError();

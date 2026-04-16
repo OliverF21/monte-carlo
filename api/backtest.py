@@ -286,13 +286,14 @@ def _apply_calib(paths, k):
 
 
 def _fetch_portfolio(portfolio, fetch_period):
-    """Fetch data for every ticker, align dates, return synthetic close series."""
-    tickers = [p["ticker"].upper().strip() for p in portfolio]
-    weights = np.array([float(p["weight"]) for p in portfolio])
-    w_sum = weights.sum()
-    if w_sum <= 0:
-        raise ValueError("Portfolio weights must be positive and sum to > 0.")
-    weights = weights / w_sum
+    """Fetch data for every ticker, align dates, return synthetic close series.
+
+    Supports shares mode {"ticker": "AAPL", "shares": 100} and weight mode
+    {"ticker": "AAPL", "weight": 0.4}.  In shares mode weights are derived
+    from shares × latest_price / total_portfolio_value.
+    """
+    tickers     = [p["ticker"].upper().strip() for p in portfolio]
+    shares_mode = "shares" in portfolio[0]
 
     raw = yf.download(tickers, period=fetch_period, auto_adjust=True,
                       progress=False, threads=True)
@@ -313,15 +314,32 @@ def _fetch_portfolio(portfolio, fetch_period):
     close_df = close_df.dropna()
     close_df = close_df[tickers]
 
-    log_ret_df = np.log(close_df / close_df.shift(1)).dropna()
+    if shares_mode:
+        shares        = np.array([float(p["shares"]) for p in portfolio])
+        latest_prices = close_df.iloc[-1].values
+        dollar_values = shares * latest_prices
+        total_value   = dollar_values.sum()
+        if total_value <= 0:
+            raise ValueError("Portfolio market value must be > 0.")
+        weights = dollar_values / total_value
+        parts   = [f"{t} {s:.0f}sh ({w*100:.0f}%)"
+                   for t, s, w in zip(tickers, shares, weights)]
+    else:
+        weights = np.array([float(p["weight"]) for p in portfolio])
+        w_sum = weights.sum()
+        if w_sum <= 0:
+            raise ValueError("Portfolio weights must be positive and sum to > 0.")
+        weights = weights / w_sum
+        parts   = [f"{t} {w*100:.0f}%" for t, w in zip(tickers, weights)]
+
+    label = " / ".join(parts)
+
+    log_ret_df   = np.log(close_df / close_df.shift(1)).dropna()
     port_log_ret = (log_ret_df.values * weights).sum(axis=1)
-    cum_ret = np.concatenate([[0.0], np.cumsum(port_log_ret)])
-    port_close = 100.0 * np.exp(cum_ret)
+    cum_ret      = np.concatenate([[0.0], np.cumsum(port_log_ret)])
+    port_close   = 100.0 * np.exp(cum_ret)
 
     port_series = pd.Series(port_close, index=close_df.index, name="Close")
-
-    parts = [f"{t} {w*100:.0f}%" for t, w in zip(tickers, weights)]
-    label = " / ".join(parts)
     return port_series, label
 
 

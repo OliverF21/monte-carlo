@@ -242,17 +242,16 @@ def _fetch_portfolio(portfolio, lookback):
     Fetch data for every ticker in the portfolio, align dates, and return
     a synthetic close-price series (indexed to 100) and weighted log returns.
 
-    portfolio: list of {"ticker": "AAPL", "weight": 0.4}
+    Supports two input modes detected from the portfolio items:
+      - Shares mode:  {"ticker": "AAPL", "shares": 100}
+        Weights are derived from (shares × latest_price) / total_portfolio_value.
+      - Weight mode:  {"ticker": "AAPL", "weight": 0.4}
+        Weights are normalised to sum to 1 as before.
+
     Returns: (close_series, log_returns_array, label, last_index_entry)
     """
-    tickers = [p["ticker"].upper().strip() for p in portfolio]
-    weights = np.array([float(p["weight"]) for p in portfolio])
-
-    # Normalise weights to sum to 1
-    w_sum = weights.sum()
-    if w_sum <= 0:
-        raise ValueError("Portfolio weights must be positive and sum to > 0.")
-    weights = weights / w_sum
+    tickers     = [p["ticker"].upper().strip() for p in portfolio]
+    shares_mode = "shares" in portfolio[0]
 
     # Download all tickers at once
     raw = yf.download(tickers, period=lookback, auto_adjust=True,
@@ -280,24 +279,43 @@ def _fetch_portfolio(portfolio, lookback):
     if len(close_df) < 30:
         raise ValueError("Insufficient overlapping history for portfolio (need >= 30 days).")
 
-    # Reorder columns to match input order and rebuild aligned weight vector
+    # Reorder columns to match input order
     close_df = close_df[tickers]
 
-    # Compute daily log returns per ticker
-    log_ret_df = np.log(close_df / close_df.shift(1)).dropna()
+    if shares_mode:
+        # Derive weights from shares × latest price (market-value weighting)
+        shares        = np.array([float(p["shares"]) for p in portfolio])
+        latest_prices = close_df.iloc[-1].values
+        dollar_values = shares * latest_prices
+        total_value   = dollar_values.sum()
+        if total_value <= 0:
+            raise ValueError("Portfolio market value must be > 0.")
+        weights = dollar_values / total_value
 
-    # Weighted portfolio log returns (approximate for small daily returns)
+        # Label shows shares and derived weight: "AAPL 100sh (32%)"
+        parts = [f"{t} {s:.0f}sh ({w*100:.0f}%)"
+                 for t, s, w in zip(tickers, shares, weights)]
+    else:
+        weights = np.array([float(p["weight"]) for p in portfolio])
+        w_sum = weights.sum()
+        if w_sum <= 0:
+            raise ValueError("Portfolio weights must be positive and sum to > 0.")
+        weights = weights / w_sum
+
+        # Label shows normalised weight: "AAPL 40%"
+        parts = [f"{t} {w*100:.0f}%" for t, w in zip(tickers, weights)]
+
+    label = " / ".join(parts)
+
+    # Compute daily log returns per ticker, then take the weighted sum
+    log_ret_df  = np.log(close_df / close_df.shift(1)).dropna()
     port_log_ret = (log_ret_df.values * weights).sum(axis=1)
 
     # Build synthetic portfolio close price indexed to 100
-    cum_ret = np.concatenate([[0.0], np.cumsum(port_log_ret)])
+    cum_ret   = np.concatenate([[0.0], np.cumsum(port_log_ret)])
     port_close = 100.0 * np.exp(cum_ret)
 
     port_series = pd.Series(port_close, index=close_df.index, name="Close")
-
-    # Build label like "AAPL 40% / MSFT 30% / GOOGL 30%"
-    parts = [f"{t} {w*100:.0f}%" for t, w in zip(tickers, weights)]
-    label = " / ".join(parts)
 
     return port_series, port_log_ret, label, close_df.index[-1]
 

@@ -1,6 +1,6 @@
-ticker,weight
-AAPL,0.30
-MSFT,0.25
-GOOGL,0.20
-AMZN,0.15
-NVDA,0.10
+ticker,shares
+AAPL,50
+MSFT,30
+GOOGL,20
+AMZN,15
+NVDA,25

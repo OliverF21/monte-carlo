@@ -1013,7 +1013,7 @@
               <label style="display:block;margin-bottom:6px;font-size:0.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-tertiary);">Portfolio CSV</label>
               <div class="csv-drop-zone" id="csv-drop-zone">
                 <p>Drop a CSV file here or click to browse</p>
-                <span class="csv-hint">Shares: ticker,shares &mdash; e.g. AAPL,100 &nbsp;&nbsp;|&nbsp;&nbsp; Weights: ticker,weight &mdash; e.g. AAPL,0.40</span>
+                <span class="csv-hint">Format: ticker,shares &mdash; e.g. AAPL,100 &nbsp;&nbsp;&middot;&nbsp;&nbsp; Weights derived from shares &times; current price</span>
                 <input type="file" id="csv-file" accept=".csv,text/csv" style="display:none" />
               </div>
               <div id="portfolio-preview" style="display:none;">
@@ -1393,15 +1393,16 @@
     function parseCsv(text) {
       var lines = text.trim().split(/\r?\n/);
       var result = [];
-      var sharesMode = false;
+      var explicitMode = null; // 'shares' | 'weight' | null
 
       for (var i = 0; i < lines.length; i++) {
         var line = lines[i].trim();
         if (!line) continue;
 
-        // Header row: detect mode from column name, then skip
+        // Header row: detect explicit mode from column name, then skip
         if (i === 0 && /^ticker/i.test(line)) {
-          sharesMode = /shares/i.test(line);
+          if (/shares/i.test(line))       explicitMode = 'shares';
+          else if (/weight/i.test(line))  explicitMode = 'weight';
           continue;
         }
 
@@ -1412,13 +1413,31 @@
         if (!ticker || !/^[A-Za-z]{1,5}$/.test(ticker)) continue;
         if (isNaN(value) || value <= 0) continue;
 
-        // Auto-detect shares mode from values when no header: any value > 1
-        if (!sharesMode && value > 1.0) sharesMode = true;
-
         result.push({ ticker: ticker, _value: value });
       }
 
-      // Convert raw values to the correct field name
+      if (result.length === 0) return [];
+
+      // Determine mode:
+      //   1. Explicit header wins.
+      //   2. Any value > 1 → shares (can't be a fractional weight).
+      //   3. All values ≤ 1 and they sum within 5% of 1.0 → treat as weights.
+      //   4. Otherwise default to shares (user likely entered share counts).
+      var sharesMode;
+      if (explicitMode === 'shares') {
+        sharesMode = true;
+      } else if (explicitMode === 'weight') {
+        sharesMode = false;
+      } else {
+        var hasValueOverOne = result.some(function (r) { return r._value > 1.0; });
+        if (hasValueOverOne) {
+          sharesMode = true;
+        } else {
+          var total = result.reduce(function (s, r) { return s + r._value; }, 0);
+          sharesMode = Math.abs(total - 1.0) > 0.05; // values sum ≠ ~1 → shares
+        }
+      }
+
       return result.map(function (r) {
         var obj = { ticker: r.ticker };
         obj[sharesMode ? 'shares' : 'weight'] = r._value;
@@ -1483,7 +1502,7 @@
       reader.onload = function (e) {
         var parsed = parseCsv(e.target.result);
         if (parsed.length === 0) {
-          showError('Could not parse portfolio from CSV. Use ticker,shares (e.g. AAPL,100) or ticker,weight (e.g. AAPL,0.40)');
+          showError('Could not parse portfolio from CSV. Expected format: ticker,shares — e.g. AAPL,100');
           return;
         }
         hideError();
